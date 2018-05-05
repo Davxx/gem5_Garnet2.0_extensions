@@ -2,13 +2,13 @@
 #
 # Script for running Garnet_standalone
 
-HIDEWARNERR=1
+HIDEWARNERR=0
 NCPU=16
 NROWS=4
-TOPO=HierarchicalRing
+TOPO=Ring
 IJRATE=0.2
 SYNTH=uniform_random
-NCYCLES=10000
+NCYCLES=10
 
 if [ "$#" -gt 0 ]; then
     NCPU=$1

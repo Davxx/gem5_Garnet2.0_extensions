@@ -14,7 +14,7 @@ class TikzTopology():
         self.pngname = "topology.png"
         
         # Remove tex files after successful PNG generation
-        self.cleanup = True 
+        self.cleanup = False 
 
         self.tikzfile = None
         self.outdir = os.environ["GEM5OUTDIR"] if "GEM5OUTDIR" in os.environ else "m5out"
