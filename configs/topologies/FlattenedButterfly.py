@@ -1,33 +1,5 @@
-# Copyright (c) 2010 Advanced Micro Devices, Inc.
-#               2016 Georgia Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met: redistributions of source code must retain the above copyright
-# notice, this list of conditions and the following disclaimer;
-# redistributions in binary form must reproduce the above copyright
-# notice, this list of conditions and the following disclaimer in the
-# documentation and/or other materials provided with the distribution;
-# neither the name of the copyright holders nor the names of its
-# contributors may be used to endorse or promote products derived from
-# this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# Authors: Brad Beckmann
-#          Tushar Krishna
-# Adapted by: David Smelt
+# Author: David Smelt
+# Adapted from: Mesh_XY.py (c) 2010 Advanced Micro Devices, Inc., 2016 Georgia Institute of Technology
 
 from m5.params import *
 from m5.objects import *
@@ -35,12 +7,10 @@ from m5.objects import *
 from BaseTopology import SimpleTopology
 from TikzTopology import TikzTopology
 
-class Mesh_XY(SimpleTopology):
-    # Creates a generic Mesh assuming an equal number of cache
+class FlattenedButterfly(SimpleTopology):
+    # Creates a generic FlattenedButterfly topology assuming an equal number of cache
     # and directory controllers.
-    # XY routing is enforced (using link weights)
-    # to guarantee deadlock freedom.
-    description='Mesh_XY'
+    description='FlattenedButterfly'
 
     def __init__(self, controllers):
         self.nodes = controllers
@@ -52,7 +22,7 @@ class Mesh_XY(SimpleTopology):
         if not self.tikz_out is None:
             self.tikz_out.write(ln)
 
-    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
+    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink, tikz_bend_right):
         # Makes a bidirectional link between self.routers src_id and dst_id
 
         if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
@@ -72,10 +42,16 @@ class Mesh_XY(SimpleTopology):
                                           dst_inport=src_outport,
                                           latency=self.link_latency,
                                           weight=weight))
-
-            thick_line = "line width=1mm" if weight == 1 else ""
-            self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, thick_line, dst_id))
             self.link_count += 2
+
+            # Generate Tikz code for edge
+            thick_line = "line width=0.6mm" if weight == 1 else ""
+            bend_right = "bend right=30" if tikz_bend_right else ""
+
+            if bend_right != "" and thick_line != "":
+                bend_right = bend_right + ","
+
+            self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, bend_right + thick_line, dst_id))
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
@@ -158,28 +134,29 @@ class Mesh_XY(SimpleTopology):
                         self.writeTikz("    \\node[main node] ({0}) [right of={{{1}}}] {{{2}}};".format(r, r - 1, r))
 
             self.writeTikz("\n    \\path[every node/.style={font=\\sffamily\\footnotesize},"
-                           "every edge/.append style={line width=0.3mm}]")
+                           "every edge/.append style={bend left=30,line width=0.2mm}]")
 
         self.int_links = []
         self.lst_links = []
 
-        # Create the mesh links.
+        # Create the flattened butterfly links.
         for row in xrange(nrows):
             for col in xrange(ncols):
+                src_id = col + (row * ncols)
 
-                if (col + 1 < ncols):
+                for x in xrange(1, ncols):
+                    dst_col = (col + x) % ncols
+                    dst_id = dst_col + (row * ncols)
+
                     # Horizontal link (weight = 1)
+                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink, (row < nrows / 2))
 
-                    src_id = col + (row * ncols)
-                    dst_id = (col + 1) + (row * ncols)
-                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink)
+                for y in xrange(1, nrows):
+                    dst_row = (row + y) % nrows
+                    dst_id = col + (dst_row * ncols)
 
-                if (row + 1 < nrows):
                     # Vertical link (weight = 2)
-
-                    src_id = col + (row * ncols)
-                    dst_id = col + ((row + 1) * ncols)
-                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink)
+                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink, (col >= ncols / 2))
 
         if not self.tikz_out is None:
             self.tikz_out.close()

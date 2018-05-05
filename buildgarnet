@@ -1,0 +1,1 @@
+scons -j3 build/NULL/gem5.debug PROTOCOL=Garnet_standalone

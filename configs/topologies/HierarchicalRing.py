@@ -1,33 +1,5 @@
-# Copyright (c) 2010 Advanced Micro Devices, Inc.
-#               2016 Georgia Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met: redistributions of source code must retain the above copyright
-# notice, this list of conditions and the following disclaimer;
-# redistributions in binary form must reproduce the above copyright
-# notice, this list of conditions and the following disclaimer in the
-# documentation and/or other materials provided with the distribution;
-# neither the name of the copyright holders nor the names of its
-# contributors may be used to endorse or promote products derived from
-# this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# Authors: Brad Beckmann
-#          Tushar Krishna
-# Adapted by: David Smelt
+# Author: David Smelt
+# Adapted from: Mesh_XY.py (c) 2010 Advanced Micro Devices, Inc., 2016 Georgia Institute of Technology
 
 from m5.params import *
 from m5.objects import *
@@ -35,12 +7,12 @@ from m5.objects import *
 from BaseTopology import SimpleTopology
 from TikzTopology import TikzTopology
 
-class Mesh_XY(SimpleTopology):
-    # Creates a generic Mesh assuming an equal number of cache
+import numpy as np
+
+class HierarchicalRing(SimpleTopology):
+    # Creates a generic HierarchicalRing topology assuming an equal number of cache
     # and directory controllers.
-    # XY routing is enforced (using link weights)
-    # to guarantee deadlock freedom.
-    description='Mesh_XY'
+    description='HierarchicalRing'
 
     def __init__(self, controllers):
         self.nodes = controllers
@@ -52,11 +24,19 @@ class Mesh_XY(SimpleTopology):
         if not self.tikz_out is None:
             self.tikz_out.write(ln)
 
-    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
-        # Makes a bidirectional link between self.routers src_id and dst_id
+    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink, is_central_ring):
+        # Makes a bidirectional link between routers src_id and dst_id
 
-        if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
-            self.lst_links.append((src_id, dst_id))
+        new_weight = weight
+        num_routers = self.nrows * self.ncols
+        if (not is_central_ring and src_outport == "North") or is_central_ring:
+            if dst_id < num_routers - self.ncols and src_id >= self.ncols and\
+                dst_id % self.ncols != 0 and (dst_id + 1) % self.ncols != 0:
+                # Link is part of central ring ==> gets stronger weight = 1
+                new_weight = 1
+        
+        if (new_weight == 1 and not (src_id, dst_id) in self.central_ring_links and\
+            not (dst_id, src_id) in self.central_ring_links) or new_weight == 2:
 
             self.int_links.append(IntLink(link_id=self.link_count,
                                           src_node=self.routers[src_id],
@@ -64,23 +44,50 @@ class Mesh_XY(SimpleTopology):
                                           src_outport=src_outport,
                                           dst_inport=dst_inport,
                                           latency=self.link_latency,
-                                          weight=weight))
+                                          weight=new_weight))
             self.int_links.append(IntLink(link_id=self.link_count + 1,
                                           src_node=self.routers[dst_id],
                                           dst_node=self.routers[src_id],
                                           src_outport=dst_inport,
                                           dst_inport=src_outport,
                                           latency=self.link_latency,
-                                          weight=weight))
+                                          weight=new_weight))
 
-            thick_line = "line width=1mm" if weight == 1 else ""
+            if new_weight == 1:
+                self.central_ring_links.append((src_id, dst_id))
+
+            thick_line = "line width=1mm" if new_weight == 1 else ""
             self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, thick_line, dst_id))
             self.link_count += 2
+
+    def connectRing(self, ring, weight, IntLink, is_central_ring=False):
+        # Connects routers in the ring bidirectionally
+
+        x_range = ring.shape[0]
+        y_range = ring.shape[1]
+
+        for x in xrange(x_range):
+            for y in xrange(y_range):
+                if (not is_central_ring and y < y_range - 1) or\
+                   (is_central_ring and y < y_range - 1 and (x == 0 or x == x_range - 1)):
+                    # Horizontal link
+
+                    src_id = ring[x][y]
+                    dst_id = ring[x][y + 1]
+                    self.makeBiLink(src_id, dst_id, weight, "East", "West", IntLink, is_central_ring)
+
+                if (not is_central_ring and x == 1 and (y == 0 or y == y_range - 1)) or\
+                   (is_central_ring and x >= 1 and x <= x_range - 1):
+                    # Vertical link
+
+                    src_id = ring[x][y]
+                    dst_id = ring[x - 1][y]
+                    self.makeBiLink(src_id, dst_id, weight, "North", "South", IntLink, is_central_ring)
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
         num_routers = options.num_cpus
-        nrows = options.mesh_rows
+        self.nrows = options.mesh_rows
 
         # Default values for link latency and router latency.
         # Can be over-ridden on a per link/router basis
@@ -90,14 +97,17 @@ class Mesh_XY(SimpleTopology):
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
         cntrls_per_router, remainder = divmod(len(nodes), num_routers)
-        assert(nrows > 0 and nrows <= num_routers)
-        ncols = int(num_routers / nrows)
-        assert(ncols * nrows == num_routers)
+        assert(self.nrows > 0 and self.nrows <= num_routers)
+        self.ncols = int(num_routers / self.nrows)
+        assert(self.ncols * self.nrows == num_routers)
+        
+        # There must be an even number of rows and columns
+        assert(self.nrows % 2 == 0 and self.ncols % 2 == 0)
 
         # Optionally generate Tikz topology code in 'output_directory/topo.tex' and
         # convert it to 'output_directory/topology.png'
         if options.tikz:
-            self.tikz_out = TikzTopology(nrows, ncols)
+            self.tikz_out = TikzTopology(self.nrows, self.ncols)
 
         # Create the routers in the mesh
         self.routers = [Router(router_id=i, latency = router_latency) for i in range(num_routers)]
@@ -140,11 +150,11 @@ class Mesh_XY(SimpleTopology):
         if not self.tikz_out is None:
             # Generate Tikz nodes
 
-            for row in xrange(nrows):
+            for row in xrange(self.nrows):
                 first_col = False
 
-                for col in xrange(ncols):
-                    r = col + (row * ncols)
+                for col in xrange(self.ncols):
+                    r = col + (row * self.ncols)
 
                     if not first_col:
                         first_col = True
@@ -153,7 +163,7 @@ class Mesh_XY(SimpleTopology):
                             self.writeTikz("    \\node[main node] (0) [below left=0cm] {0};")
                         else:
                             self.writeTikz("    \\node[main node] ({0}) [above of={{{1}}}] {{{2}}};".format(r,
-                                           r - ncols, r))
+                                           r - self.ncols, r))
                     else:
                         self.writeTikz("    \\node[main node] ({0}) [right of={{{1}}}] {{{2}}};".format(r, r - 1, r))
 
@@ -161,27 +171,48 @@ class Mesh_XY(SimpleTopology):
                            "every edge/.append style={line width=0.3mm}]")
 
         self.int_links = []
-        self.lst_links = []
+        self.central_ring_links = []
+        rings_left = []
 
-        # Create the mesh links.
-        for row in xrange(nrows):
-            for col in xrange(ncols):
+        # Gather routers for left half of sub-rings
+        midpoint = self.ncols / 2
+        for x in xrange(0, self.nrows, 2):
+            ring = np.zeros((2, midpoint), dtype=int)
 
-                if (col + 1 < ncols):
-                    # Horizontal link (weight = 1)
+            offset = 0
+            for i in xrange(self.ncols):
+                if i >= midpoint:
+                    offset = 1
 
-                    src_id = col + (row * ncols)
-                    dst_id = (col + 1) + (row * ncols)
-                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink)
+                router_index = i - offset * midpoint
+                ring[1 - offset][router_index] = router_index + ((x + offset) * self.ncols)
 
-                if (row + 1 < nrows):
-                    # Vertical link (weight = 2)
+            rings_left.append(ring)
 
-                    src_id = col + (row * ncols)
-                    dst_id = col + ((row + 1) * ncols)
-                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink)
+        # Gather routers for right half of sub-rings
+        rings_right = rings_left[:]
+        for i in xrange(len(rings_right)):
+            rings_right[i] = rings_right[i] + midpoint
+
+        # Create sub-ring links (weight = 2)
+        rings = rings_left + rings_right
+
+        for ring in rings:
+            self.connectRing(ring, 2, IntLink)
+
+        # Gather routers situated on central ring
+        central_ring_height = self.nrows - 2
+        central_ring = np.zeros((central_ring_height, 2), dtype=int)
+        for i in xrange(central_ring_height):
+            id1 = (i + 1) * self.ncols + midpoint - 1
+            id2 = id1 + 1
+            central_ring[central_ring_height - 1 - i][0] = id1
+            central_ring[central_ring_height - 1 - i][1] = id2
+
+        # Create central ring links (weight = 1)
+        self.connectRing(central_ring, 1, IntLink, True)
 
         if not self.tikz_out is None:
             self.tikz_out.close()
-
+        
         network.int_links = self.int_links

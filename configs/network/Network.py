@@ -36,6 +36,8 @@ def define_options(parser):
     # By default, ruby uses the simple timing cpu
     parser.set_defaults(cpu_type="TimingSimpleCPU")
 
+    parser.add_option("--tikz", default=False, action="store_true",
+                      help="write topology.tikz code to the output directory")
     parser.add_option("--topology", type="string", default="Crossbar",
                       help="check configs/topologies for complete set")
     parser.add_option("--mesh-rows", type="int", default=0,

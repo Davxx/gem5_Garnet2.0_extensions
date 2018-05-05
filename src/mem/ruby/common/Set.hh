@@ -40,7 +40,7 @@
 #include "mem/ruby/common/TypeDefines.hh"
 
 // Change for systems with more than 64 controllers of a particular type.
-const int NUMBER_BITS_PER_SET = 64;
+const int NUMBER_BITS_PER_SET = 1024;
 
 class Set
 {
