@@ -93,6 +93,7 @@ for status, fname in git.status(filter="MA", cached=True):
                 staged_mismatch.add(fname)
     f.close()
 
+'''
 if failing_files:
     if len(failing_files) > len(staged_mismatch):
         print >> sys.stderr
@@ -114,3 +115,4 @@ if failing_files:
             print >> sys.stderr, "\t%s" % f
         print >> sys.stderr, "Please `git --add' them"
     sys.exit(1)
+'''
