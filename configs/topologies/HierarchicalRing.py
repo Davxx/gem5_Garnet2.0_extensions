@@ -126,17 +126,19 @@ class HierarchicalRing(SimpleTopology):
             else:
                 remainder_nodes.append(nodes[node_index])
 
-        # Connect each node to the appropriate router
+        # Connect each node to the appropriate router.
+        # These should be of type L1Cache_Controllers or Directory_Controller
         ext_links = []
-        for (i, n) in enumerate(network_nodes):
+        for (i, node) in enumerate(network_nodes):
             cntrl_level, router_id = divmod(i, num_routers)
             assert(cntrl_level < cntrls_per_router)
-            ext_links.append(ExtLink(link_id=self.link_count, ext_node=n,
+            ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[router_id],
                                      latency=self.link_latency))
             self.link_count += 1
 
-        # Connect the remaining nodes to router 0. These should only be DMA nodes.
+        # Connect the remaining nodes to router 0.
+        # These should only be DMA nodes
         for (i, node) in enumerate(remainder_nodes):
             assert(node.type == 'DMA_Controller')
             assert(i < remainder)

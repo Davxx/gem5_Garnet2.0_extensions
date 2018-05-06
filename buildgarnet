@@ -1,1 +1,4 @@
+#!/usr/bin/env bash
+#
+# Command for building Garnet_standalone
 scons -j3 build/NULL/gem5.debug PROTOCOL=Garnet_standalone

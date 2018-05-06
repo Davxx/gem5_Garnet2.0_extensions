@@ -306,6 +306,7 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
         }
     } else {
         has_credit = m_output_unit[outport]->has_credit(outvc);
+        //printf("router id: %d, inport: %d, invc: %d, outport: %d, outvc: %d, vnetin: %d, vnetout: %d\n", m_router->get_id(), inport, invc, outport, outvc, vnet, get_vnet(outvc));
     }
 
     // cannot send if no outvc or no credit.
@@ -332,6 +333,11 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
                 return false;
             }
         }
+    }
+
+    // router 15
+    if (m_router->get_id() == 15 && invc == outvc) {
+        return false;
     }
 
     return true;

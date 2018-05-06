@@ -4,11 +4,11 @@
 
 HIDEWARNERR=0
 NCPU=16
-NROWS=4
+NROWS=2
 TOPO=Ring
 IJRATE=0.2
 SYNTH=uniform_random
-NCYCLES=10
+NCYCLES=10000
 
 if [ "$#" -gt 0 ]; then
     NCPU=$1
@@ -51,6 +51,8 @@ fi
 # Set environment variable for writing extra output files like topology.png
 export GEM5OUTDIR=$OUTDIR
 
+# ‘uniform_random’, ‘tornado’, ‘bit_complement’, ‘bit_reverse’, ‘bit_rotation’, ‘neighbor’, ‘shuffle’, and ‘transpose’.
+
 ./build/NULL/gem5.debug $SUPP -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPU \
@@ -60,4 +62,10 @@ export GEM5OUTDIR=$OUTDIR
 --sim-cycles=$NCYCLES \
 --injectionrate=$IJRATE \
 --synthetic=$SYNTH \
+--link-width-bits=32 \
+--routing-algorithm=2 \
+--vcs-per-vnet=4 \
+--inj-vnet=0 \
 --tikz
+
+python getnetworkstats.py $OUTDIR
