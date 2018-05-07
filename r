@@ -7,8 +7,9 @@ NCPU=16
 NROWS=2
 TOPO=Ring
 IJRATE=0.2
+ROUTINGALGO=0
 SYNTH=uniform_random
-NCYCLES=10000
+NCYCLES=10
 
 if [ "$#" -gt 0 ]; then
     NCPU=$1
@@ -23,15 +24,27 @@ if [ "$#" -gt 3 ]; then
     IJRATE=$4
 fi
 if [ "$#" -gt 4 ]; then
-    SYNTH=$5
+    ROUTINGALGO=$5
+fi
+if [ "$#" -gt 5 ]; then
+    SYNTH=$6
 fi
 
+# Supplement output dir name with routing algorithm
+case "$ROUTINGALGO" in
+    0) RALGNAME=weighted_table_routing ;;
+    1) RALGNAME=mesh_xy ;;
+    2) RALGNAME=random_routing ;;
+    3) RALGNAME=adaptive_routing ;;
+    *) RALGNAME=unknown_routing ;;
+esac
+
 NCOLS=$(($NCPU/$NROWS))
-OUTDIR="m5out/"$TOPO-$NCPU"core-"$NROWS"x"$NCOLS-$SYNTH-$IJRATE
+OUTDIR="m5out/"$TOPO-$NCPU"core-"$NROWS"x"$NCOLS-$SYNTH-$IJRATE-$RALGNAME
 
 # Generate output dir name
 if [ -d $OUTDIR ]; then
-    MAXOUTDIRS=50
+    MAXOUTDIRS=99
     for ((i=2;i<=MAXOUTDIRS;i++)); do
         NOUTDIR=$OUTDIR"-"$i
         if [ ! -d $NOUTDIR ]; then
@@ -48,12 +61,9 @@ else
     SUPP=""
 fi
 
-# Set environment variable for writing extra output files like topology.png
-export GEM5OUTDIR=$OUTDIR
-
 # ‘uniform_random’, ‘tornado’, ‘bit_complement’, ‘bit_reverse’, ‘bit_rotation’, ‘neighbor’, ‘shuffle’, and ‘transpose’.
 
-./build/NULL/gem5.debug $SUPP -d $OUTDIR configs/example/garnet_synth_traffic.py \
+./build/NULL/gem5.debug --dot-config=config.dot $SUPP -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPU \
 --num-dirs=$NCPU \
@@ -62,8 +72,8 @@ export GEM5OUTDIR=$OUTDIR
 --sim-cycles=$NCYCLES \
 --injectionrate=$IJRATE \
 --synthetic=$SYNTH \
+--routing-algorithm=$ROUTINGALGO \
 --link-width-bits=32 \
---routing-algorithm=2 \
 --vcs-per-vnet=4 \
 --inj-vnet=0 \
 --tikz

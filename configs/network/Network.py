@@ -65,9 +65,10 @@ def define_options(parser):
     parser.add_option("--routing-algorithm", action="store", type="int",
                       default=0,
                       help="""routing algorithm in network.
-                            0: weight-based table
+                            0: Weight-based table
                             1: XY (for Mesh. see garnet2.0/RoutingUnit.cc)
-                            2: Custom (see garnet2.0/RoutingUnit.cc""")
+                            2: Random (custom)
+                            3: Adaptive (custom)""")
     parser.add_option("--network-fault-model", action="store_true",
                       default=False,
                       help="""enable network fault model:

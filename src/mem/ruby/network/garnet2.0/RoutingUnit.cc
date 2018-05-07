@@ -160,9 +160,10 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
             lookupRoutingTable(route.vnet, route.net_dest); break;
         case XY_:     outport =
             outportComputeXY(route, inport, inport_dirn); break;
-        // any custom algorithm
-        case CUSTOM_: outport =
-            outportComputeCustom(route, inport, inport_dirn); break;
+        case RANDOM_: outport =
+            outportComputeRandom(route, inport, inport_dirn); break;
+        case ADAPTIVE_: outport =
+            outportComputeAdaptive(route, inport, inport_dirn); break;
         default: outport =
             lookupRoutingTable(route.vnet, route.net_dest); break;
     }
@@ -232,7 +233,7 @@ RoutingUnit::outportComputeXY(RouteInfo route,
 
 // Random routing algorithm
 int
-RoutingUnit::outportComputeCustom(RouteInfo route,
+RoutingUnit::outportComputeRandom(RouteInfo route,
                                   int inport,
                                   PortDirection inport_dirn)
 {
@@ -251,6 +252,9 @@ RoutingUnit::outportComputeCustom(RouteInfo route,
     int x_hops = abs(dest_x - my_x);
     int y_hops = abs(dest_y - my_y);
 
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
+
     PortDirection directions[4] = {"West", "East", "North", "South"};
     PortDirection randdir = "Unknown";
     int randn = 0;
@@ -258,37 +262,101 @@ RoutingUnit::outportComputeCustom(RouteInfo route,
     // already checked that in outportCompute() function
     assert(!(x_hops == 0 && y_hops == 0));
 
-    int i = 0;
-    do {
-        i++;
-        if (i > 1000) {
-            printf("1000th iteration\n");
-            break;
-        }
-        if (x_hops && y_hops) {
-            // Choose a random X- or Y-direction
-            randn = rand() % 4;
-        } else if (x_hops) {
-            // Choose a random X-direction
-            randn = rand() % 2;
-        } else if (y_hops) {
-            // Choose a random Y-direction
-            randn = 2 + (rand() % 2);
-        }
-        randdir = directions[randn];
+    if (x_hops && y_hops) {
+        // Choose whether to go in X- or Y-direction
         
-        // Continue loop if destination hop exceeds topology
-        if ((my_x == 0 && randn == 0) ||
-            (my_x == num_cols - 1 && randn == 1) ||
-            (my_y == 0 && randn == 3) ||
-            (my_y == num_rows - 1 && randn == 2))
-            randdir = inport_dirn;
+        randn = rand() % 2;
+        x_hops = randn;
+        y_hops = 1 - randn;
+    }
+    if (x_hops) {
+        if (x_dirn)
+            // Move East
+            randn = 1;
+        else
+            // Move West
+            randn = 0;
+    }
+    else if (y_hops) {
+        if (y_dirn)
+            // Move North
+            randn = 2;
+        else
+            // Move South
+            randn = 3;
+    }
+    randdir = directions[randn];
 
-    } while (randdir == inport_dirn);
-    printf("nc=%d, nr=%d, my_x: %d, my_y: %d\n", num_cols - 1, num_rows - 1, my_x, my_y);
+    printf("destx=%d, desty=%d, my_x: %d, my_y: %d\n", dest_x, dest_y, my_x, my_y);
+    fflush(stdout);
     std::cout << "moving from " << inport_dirn;
     std::cout << " to " << randdir;
     std::cout << "\n\n";
+
+    return m_outports_dirn2idx[randdir];
+}
+
+// Adaptive routing algorithm
+int
+RoutingUnit::outportComputeAdaptive(RouteInfo route,
+                                    int inport,
+                                    PortDirection inport_dirn)
+{
+    int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
+    int num_cols = m_router->get_net_ptr()->getNumCols();
+    assert(num_rows > 0 && num_cols > 0);
+
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+    int my_y = my_id / num_cols;
+
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+    int dest_y = dest_id / num_cols;
+
+    int x_hops = abs(dest_x - my_x);
+    int y_hops = abs(dest_y - my_y);
+
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
+
+    PortDirection directions[4] = {"West", "East", "North", "South"};
+    PortDirection randdir = "Unknown";
+    int randn = 0;
+
+    // already checked that in outportCompute() function
+    assert(!(x_hops == 0 && y_hops == 0));
+
+    if (x_hops && y_hops) {
+        // Choose whether to go in X- or Y-direction
+        
+        randn = rand() % 2;
+        x_hops = randn;
+        y_hops = 1 - randn;
+    }
+    if (x_hops) {
+        if (x_dirn)
+            // Move East
+            randn = 1;
+        else
+            // Move West
+            randn = 0;
+    }
+    else if (y_hops) {
+        if (y_dirn)
+            // Move North
+            randn = 2;
+        else
+            // Move South
+            randn = 3;
+    }
+    randdir = directions[randn];
+
+    /*printf("destx=%d, desty=%d, my_x: %d, my_y: %d\n", dest_x, dest_y, my_x, my_y);
+    fflush(stdout);
+    std::cout << "moving from " << inport_dirn;
+    std::cout << " to " << randdir;
+    std::cout << "\n\n";*/
 
     return m_outports_dirn2idx[randdir];
 }

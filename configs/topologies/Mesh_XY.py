@@ -29,6 +29,7 @@
 #          Tushar Krishna
 # Adapted by: David Smelt
 
+import m5
 from m5.params import *
 from m5.objects import *
 
@@ -97,7 +98,7 @@ class Mesh_XY(SimpleTopology):
         # Optionally generate Tikz topology code in 'output_directory/topo.tex' and
         # convert it to 'output_directory/topology.png'
         if options.tikz:
-            self.tikz_out = TikzTopology(nrows, ncols)
+            self.tikz_out = TikzTopology(m5.options.outdir, nrows, ncols)
 
         # Create the routers in the mesh
         self.routers = [Router(router_id=i, latency = router_latency) for i in range(num_routers)]

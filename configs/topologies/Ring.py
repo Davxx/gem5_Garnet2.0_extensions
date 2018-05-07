@@ -1,6 +1,7 @@
 # Author: David Smelt
 # Adapted from: Mesh_XY.py (c) 2010 Advanced Micro Devices, Inc., 2016 Georgia Institute of Technology
 
+import m5
 from m5.params import *
 from m5.objects import *
 
@@ -74,7 +75,7 @@ class Ring(SimpleTopology):
         # Optionally generate Tikz topology code in 'output_directory/topo.tex' and
         # convert it to 'output_directory/topology.png'
         if options.tikz:
-            self.tikz_out = TikzTopology(nrows, ncols)
+            self.tikz_out = TikzTopology(m5.options.outdir, nrows, ncols)
 
         # Create the routers on the ring
         self.routers = [Router(router_id=i, latency = router_latency) for i in range(num_routers)]

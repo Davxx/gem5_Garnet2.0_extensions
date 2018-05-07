@@ -83,9 +83,9 @@ def fromSeconds(value):
 
     int_value = int(round(value))
     err = (value - int_value) / value
-    if err > frequency_tolerance:
+    '''if err > frequency_tolerance:
         warn("rounding error > tolerance\n    %f rounded to %d", value,
-            int_value)
+            int_value)'''
     return int_value
 
 __all__ = [ 'setGlobalFrequency', 'fixGlobalFrequency', 'fromSeconds',

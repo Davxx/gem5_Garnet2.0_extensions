@@ -125,7 +125,8 @@ DRAMCtrl::DRAMCtrl(const DRAMCtrlParams* p) :
         ranksPerChannel;
 
     // if actual DRAM size does not match memory capacity in system warn!
-    if (deviceCapacity != capacity / (1024 * 1024))
+    // unless capacity == 8MB
+    if (deviceCapacity != capacity / (1024 * 1024) && capacity / (1024 * 1024) != 8)
         warn("DRAM device capacity (%d Mbytes) does not match the "
              "address range assigned (%d Mbytes)\n", deviceCapacity,
              capacity / (1024 * 1024));

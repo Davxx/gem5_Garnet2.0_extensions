@@ -8,16 +8,16 @@ import subprocess
 # If imagemagick is installed, the topology is written to 'sim_output_directory/topology.png'
 
 class TikzTopology():
-    def __init__(self, nrows, ncols):
+    def __init__(self, outdir, nrows, ncols):
         # Use different base names for texname and pngname
         self.texname = "topo.tex"
         self.pngname = "topology.png"
         
-        # Remove tex files after successful PNG generation
+        # rm `self.texname`.* after successful PNG generation
         self.cleanup = True 
 
         self.tikzfile = None
-        self.outdir = os.environ["GEM5OUTDIR"] if "GEM5OUTDIR" in os.environ else "m5out"
+        self.outdir = outdir
 
         # Create output dir if it does not exist yet
         if not os.path.isdir(self.outdir):

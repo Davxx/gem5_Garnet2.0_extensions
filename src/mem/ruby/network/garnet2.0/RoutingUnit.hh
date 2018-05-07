@@ -67,10 +67,15 @@ class RoutingUnit
                          int inport,
                          PortDirection inport_dirn);
 
-    // Custom Routing Algorithm using Port Directions
-    int outportComputeCustom(RouteInfo route,
+    // Custom Random Routing Algorithm using Port Directions
+    int outportComputeRandom(RouteInfo route,
                              int inport,
                              PortDirection inport_dirn);
+
+    // Custom Adaptive Routing Algorithm using Port Directions
+    int outportComputeAdaptive(RouteInfo route,
+                               int inport,
+                               PortDirection inport_dirn);
 
   private:
     Router *m_router;
