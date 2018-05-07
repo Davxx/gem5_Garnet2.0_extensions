@@ -4,12 +4,14 @@ parsetab.py
 cscope.files
 cscope.out
 *.pyc
+*py.class
 *~
 .*.swp
 .*.swo
 m5out
 foo.trace
 .Trash*
+nbproject
 /src/doxygen
 /ext/dramsim2/DRAMSim2
 /ext/mcpat/regression/*/*.out

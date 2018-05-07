@@ -67,12 +67,12 @@ class RoutingUnit
                          int inport,
                          PortDirection inport_dirn);
 
-    // Custom Random Routing Algorithm using Port Directions
+    // Custom Random Routing Algorithm
     int outportComputeRandom(RouteInfo route,
                              int inport,
                              PortDirection inport_dirn);
 
-    // Custom Adaptive Routing Algorithm using Port Directions
+    // Custom Adaptive Routing Algorithm
     int outportComputeAdaptive(RouteInfo route,
                                int inport,
                                PortDirection inport_dirn);

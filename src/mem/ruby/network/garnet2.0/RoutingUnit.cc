@@ -83,8 +83,8 @@ RoutingUnit::lookupRoutingTable(int vnet, NetDest msg_destination)
     for (int link = 0; link < m_routing_table.size(); link++) {
         if (msg_destination.intersectionIsNotEmpty(m_routing_table[link])) {
 
-        if (m_weight_table[link] <= min_weight)
-            min_weight = m_weight_table[link];
+            if (m_weight_table[link] <= min_weight)
+                min_weight = m_weight_table[link];
         }
     }
 
@@ -156,15 +156,15 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
         (RoutingAlgorithm) m_router->get_net_ptr()->getRoutingAlgorithm();
 
     switch (routing_algorithm) {
-        case TABLE_:  outport =
+        case TABLE_:    outport =
             lookupRoutingTable(route.vnet, route.net_dest); break;
-        case XY_:     outport =
+        case XY_:       outport =
             outportComputeXY(route, inport, inport_dirn); break;
-        case RANDOM_: outport =
+        case RANDOM_:   outport =
             outportComputeRandom(route, inport, inport_dirn); break;
         case ADAPTIVE_: outport =
             outportComputeAdaptive(route, inport, inport_dirn); break;
-        default: outport =
+        default:        outport =
             lookupRoutingTable(route.vnet, route.net_dest); break;
     }
 
@@ -240,7 +240,7 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
     int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
     int num_cols = m_router->get_net_ptr()->getNumCols();
     assert(num_rows > 0 && num_cols > 0);
-
+    
     int my_id = m_router->get_id();
     int my_x = my_id % num_cols;
     int my_y = my_id / num_cols;
@@ -248,52 +248,35 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
     int dest_id = route.dest_router;
     int dest_x = dest_id % num_cols;
     int dest_y = dest_id / num_cols;
+    
+    std::vector<int> output_link_candidates;
+    int ncandidates = 0;
 
-    int x_hops = abs(dest_x - my_x);
-    int y_hops = abs(dest_y - my_y);
-
-    bool x_dirn = (dest_x >= my_x);
-    bool y_dirn = (dest_y >= my_y);
-
-    PortDirection directions[4] = {"West", "East", "North", "South"};
-    PortDirection randdir = "Unknown";
-    int randn = 0;
-
-    // already checked that in outportCompute() function
-    assert(!(x_hops == 0 && y_hops == 0));
-
-    if (x_hops && y_hops) {
-        // Choose whether to go in X- or Y-direction
-        
-        randn = rand() % 2;
-        x_hops = randn;
-        y_hops = 1 - randn;
+    // Collect all candidate output links
+    for (int link = 0; link < m_routing_table.size(); link++) {
+        PortDirection pdr = m_outports_idx2dirn[link];
+        std::cout << "to: " << pdr;
+        std::cout << "\n";
+        fflush(stdout);
+        if (route.net_dest.intersectionIsNotEmpty(m_routing_table[link])) {
+            ncandidates++;
+            output_link_candidates.push_back(link);
+        }
     }
-    if (x_hops) {
-        if (x_dirn)
-            // Move East
-            randn = 1;
-        else
-            // Move West
-            randn = 0;
-    }
-    else if (y_hops) {
-        if (y_dirn)
-            // Move North
-            randn = 2;
-        else
-            // Move South
-            randn = 3;
-    }
-    randdir = directions[randn];
 
-    printf("destx=%d, desty=%d, my_x: %d, my_y: %d\n", dest_x, dest_y, my_x, my_y);
+    if (!output_link_candidates.size()) {
+        fatal("Fatal Error:: No Route exists from this Router.");
+        exit(0);
+    }
+
+    // Randomly select any candidate output link
+    int candidate = rand() % ncandidates;
+
+    std::cout << "selected_dir=" << m_outports_idx2dirn[output_link_candidates.at(candidate)];
+    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n", ncandidates, my_id, dest_id);
     fflush(stdout);
-    std::cout << "moving from " << inport_dirn;
-    std::cout << " to " << randdir;
-    std::cout << "\n\n";
-
-    return m_outports_dirn2idx[randdir];
+    
+    return output_link_candidates.at(candidate);
 }
 
 // Adaptive routing algorithm
@@ -352,9 +335,9 @@ RoutingUnit::outportComputeAdaptive(RouteInfo route,
     }
     randdir = directions[randn];
 
-    /*printf("destx=%d, desty=%d, my_x: %d, my_y: %d\n", dest_x, dest_y, my_x, my_y);
+    printf("destx=%d, desty=%d, my_x: %d, my_y: %d\n", dest_x, dest_y, my_x, my_y);
     fflush(stdout);
-    std::cout << "moving from " << inport_dirn;
+    /*std::cout << "moving from " << inport_dirn;
     std::cout << " to " << randdir;
     std::cout << "\n\n";*/
 

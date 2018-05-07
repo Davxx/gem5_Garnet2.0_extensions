@@ -28,6 +28,8 @@
 
 from __future__ import print_function
 
+from os import environ
+import m5
 import sys
 from m5.util import warn
 
@@ -83,9 +85,16 @@ def fromSeconds(value):
 
     int_value = int(round(value))
     err = (value - int_value) / value
-    '''if err > frequency_tolerance:
+    
+    if "GEM5SIMTYPE" in environ:
+        if environ["GEM5SIMTYPE"] == "GarnetStandalone":
+            # Hide warn message for GarnetStandalone
+            return int_value
+
+    if err > frequency_tolerance:
         warn("rounding error > tolerance\n    %f rounded to %d", value,
-            int_value)'''
+            int_value)
+
     return int_value
 
 __all__ = [ 'setGlobalFrequency', 'fixGlobalFrequency', 'fromSeconds',

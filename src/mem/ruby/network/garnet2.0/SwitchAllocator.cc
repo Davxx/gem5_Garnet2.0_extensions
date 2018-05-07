@@ -336,9 +336,8 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     }
 
     // router 15
-    if (m_router->get_id() == 15 && invc == outvc) {
-        return false;
-    }
+    /*if (m_router->get_id() == 15 && invc == outvc)
+        return false;*/
 
     return true;
 }

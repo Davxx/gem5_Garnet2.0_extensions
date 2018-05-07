@@ -1,15 +1,33 @@
 #!/usr/bin/env bash
 #
 # Script for running Garnet_standalone
+#
+# Usage: ./r n_cpus n_rows topology_py_file routing_algorithm \
+#            flit_injection_rate synthetic_traffic_type n_cycles
+#
+#                 n_cpus: number of cpu's
+#                 n_rows: number of rows in the topology structure
+#       topology_py_file: name of the .py-file in configs/topologies/
+#      routing_algorithm: routing algorithm in network, implemented in
+#                         src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
+#                         0: Weight-based table
+#                         1: XY (for Mesh)
+#                         2: Random (custom)
+#                         3: Adaptive (custom)
+#    flit_injection_rate: traffic injection rate in packets/node/cycle
+# synthetic_traffic_type: uniform_random, tornado, bit_complement, bit_reverse,
+#                         bit_rotation, neighbor, shuffle, transpose
+#               n_cycles: total number of cycles for which the simulation should run
 
-HIDEWARNERR=0
+# Defaults:
+HIDEWARNERR=0 # Hide warnings and errors?
 NCPU=16
 NROWS=2
 TOPO=Ring
 IJRATE=0.2
 ROUTINGALGO=0
 SYNTH=uniform_random
-NCYCLES=10
+NCYCLES=10000
 
 if [ "$#" -gt 0 ]; then
     NCPU=$1
@@ -21,19 +39,22 @@ if [ "$#" -gt 2 ]; then
     TOPO=$3
 fi
 if [ "$#" -gt 3 ]; then
-    IJRATE=$4
+    ROUTINGALGO=$4
 fi
 if [ "$#" -gt 4 ]; then
-    ROUTINGALGO=$5
+    IJRATE=$5
 fi
 if [ "$#" -gt 5 ]; then
     SYNTH=$6
+fi
+if [ "$#" -gt 6 ]; then
+    NCYCLES=$7
 fi
 
 # Supplement output dir name with routing algorithm
 case "$ROUTINGALGO" in
     0) RALGNAME=weighted_table_routing ;;
-    1) RALGNAME=mesh_xy ;;
+    1) RALGNAME=mesh_xy_routing ;;
     2) RALGNAME=random_routing ;;
     3) RALGNAME=adaptive_routing ;;
     *) RALGNAME=unknown_routing ;;
@@ -54,14 +75,26 @@ if [ -d $OUTDIR ]; then
     done
 fi
 
-# Hide warnings and errors?
 if [ $HIDEWARNERR -eq 1 ]; then
     SUPP="-e --stderr-file=/dev/null"
 else
     SUPP=""
 fi
 
-# ‘uniform_random’, ‘tornado’, ‘bit_complement’, ‘bit_reverse’, ‘bit_rotation’, ‘neighbor’, ‘shuffle’, and ‘transpose’.
+# Send between specific router id's
+SENDER_ID=-1
+DEST_ID=33
+SEND_TO=""
+
+if [ ! $SENDER_ID -eq -1 ]; then
+    SEND_TO+="--single-sender-id=$SENDER_ID"
+fi
+if [ ! $DEST_ID -eq -1 ]; then
+    SEND_TO+=" --single-dest-id=$DEST_ID"
+fi
+
+# Set environment variable for recognizing simulation type in gem5 .py-files
+export GEM5SIMTYPE=GarnetStandalone
 
 ./build/NULL/gem5.debug --dot-config=config.dot $SUPP -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
@@ -74,8 +107,8 @@ fi
 --synthetic=$SYNTH \
 --routing-algorithm=$ROUTINGALGO \
 --link-width-bits=32 \
---vcs-per-vnet=4 \
+--vcs-per-vnet=1 \
 --inj-vnet=0 \
---tikz
+--tikz $SEND_TO
 
 python getnetworkstats.py $OUTDIR
