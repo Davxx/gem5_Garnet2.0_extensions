@@ -125,11 +125,14 @@ DRAMCtrl::DRAMCtrl(const DRAMCtrlParams* p) :
         ranksPerChannel;
 
     // if actual DRAM size does not match memory capacity in system warn!
-    // unless capacity == 8MB (GarnetStandalone)
-    if (deviceCapacity != capacity / (1024 * 1024) && capacity / (1024 * 1024) != 8)
-        warn("DRAM device capacity (%d Mbytes) does not match the "
-             "address range assigned (%d Mbytes)\n", deviceCapacity,
-             capacity / (1024 * 1024));
+    // except when running GarnetStandalone
+    char const* env_p = std::getenv("GEM5SIMTYPE");
+    if (deviceCapacity != capacity / (1024 * 1024)) {
+        if (!(env_p && std::string(env_p) == "GarnetStandalone"))
+            warn("DRAM device capacity (%d Mbytes) does not match the "
+                 "address range assigned (%d Mbytes)\n", deviceCapacity,
+                 capacity / (1024 * 1024));
+    }
 
     DPRINTF(DRAM, "Memory capacity %lld (%lld) bytes\n", capacity,
             AbstractMemory::size());

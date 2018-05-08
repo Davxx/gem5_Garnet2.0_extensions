@@ -257,12 +257,18 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
         PortDirection pdr = m_outports_idx2dirn[link];
         std::cout << "to: " << pdr;
         std::cout << "\n";
-        fflush(stdout);
+        
+        /*NetDest rt = m_routing_table[link];
+        rt.print(std::cout);
+        std::cout << "\n";
+        fflush(stdout);*/
+        
         if (route.net_dest.intersectionIsNotEmpty(m_routing_table[link])) {
             ncandidates++;
             output_link_candidates.push_back(link);
         }
     }
+
 
     if (!output_link_candidates.size()) {
         fatal("Fatal Error:: No Route exists from this Router.");
@@ -273,7 +279,7 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
     int candidate = rand() % ncandidates;
 
     std::cout << "selected_dir=" << m_outports_idx2dirn[output_link_candidates.at(candidate)];
-    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n", ncandidates, my_id, dest_id);
+    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n\n", ncandidates, my_id, dest_id);
     fflush(stdout);
     
     return output_link_candidates.at(candidate);

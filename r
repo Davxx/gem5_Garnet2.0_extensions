@@ -20,7 +20,9 @@
 #               n_cycles: total number of cycles for which the simulation should run
 
 # Defaults:
-HIDEWARNERR=0 # Hide warnings and errors?
+HIDEWARNERR=0     # Hide warnings and errors?
+NVCS=4            # Number of virtual channels (VC) per virtual network
+LINKWIDTHBITS=32  # Width in bits for all links inside the network
 NCPU=16
 NROWS=2
 TOPO=Ring
@@ -82,8 +84,8 @@ else
 fi
 
 # Send between specific router id's
-SENDER_ID=-1
-DEST_ID=33
+SENDER_ID=15
+DEST_ID=0
 SEND_TO=""
 
 if [ ! $SENDER_ID -eq -1 ]; then
@@ -106,8 +108,8 @@ export GEM5SIMTYPE=GarnetStandalone
 --injectionrate=$IJRATE \
 --synthetic=$SYNTH \
 --routing-algorithm=$ROUTINGALGO \
---link-width-bits=32 \
---vcs-per-vnet=1 \
+--link-width-bits=$LINKWIDTHBITS \
+--vcs-per-vnet=$NVCS \
 --inj-vnet=0 \
 --tikz $SEND_TO
 
