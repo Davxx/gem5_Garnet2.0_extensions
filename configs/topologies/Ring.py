@@ -153,7 +153,7 @@ class Ring(SimpleTopology):
                 if dst_npxindex != x:
                     # Destination router is on a different row ==> Vertical link (weight = 2)
 
-                    self.makeBiLink(src_id, dst_id, 1, "North", "South", IntLink)
+                    self.makeBiLink(src_id, dst_id, 2, "South", "North", IntLink)
                 else:
                     # Horizontal link (weight = 1)
 

@@ -28,8 +28,8 @@ class TikzTopology():
             height = nrows * 0.8 if ncols == nrows else nrows * 1.2
             self.tikzfile = open(os.path.join(self.outdir, self.texname), "w")
             self.tikzfile.write("\\documentclass{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{tikz}\n"
-                                "\\usepackage[letterpaper,paperwidth=" + str(int(width)) + "in,paperheight="\
-                                + str(int(height)) + "in]{geometry}\n\\geometry{margin=0.3in}\n\\usepackage{float}\n"
+                                "\\usepackage[letterpaper,paperwidth=" + str(width) + "in,paperheight="\
+                                + str(height) + "in]{geometry}\n\\geometry{margin=0.3in}\n\\usepackage{float}\n"
                                 "\\begin{document}\n\\pagenumbering{gobble}\n\\begin{figure}[p]\n\\centering\n"
                                 "\\begin{tikzpicture}[shorten >=1pt,auto,node distance=1.5cm,align=center,"
                                 "thick,main node/.style={minimum size=25pt,fill=green!25,draw,"

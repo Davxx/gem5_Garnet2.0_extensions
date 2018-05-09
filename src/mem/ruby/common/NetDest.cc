@@ -260,6 +260,21 @@ NetDest::print(std::ostream& out) const
     out << "[NetDest (" << m_bits.size() << ") ";
 
     for (int i = 0; i < m_bits.size(); i++) {
+        for (int j = 0; j < m_bits[i].getSize(); j++) {
+            out << (bool) m_bits[i].isElement(j) << " ";
+        }
+        out << " - ";
+    }
+    out << "]";
+}
+
+/*
+ void
+NetDest::print(std::ostream& out) const
+{
+    out << "[NetDest (" << m_bits.size() << ") ";
+
+    for (int i = 0; i < m_bits.size(); i++) {
         out << "\ni=" << i;
         out << ":\n";
         for (int j = 0; j < m_bits[i].getSize(); j++) {
@@ -271,6 +286,7 @@ NetDest::print(std::ostream& out) const
     }
     out << "]\n";
 }
+ */
 
 bool
 NetDest::isEqual(const NetDest& n) const

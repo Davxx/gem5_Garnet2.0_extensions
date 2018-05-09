@@ -254,16 +254,16 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
 
     // Collect all candidate output links
     for (int link = 0; link < m_routing_table.size(); link++) {
-        PortDirection pdr = m_outports_idx2dirn[link];
-        std::cout << "to: " << pdr;
+        PortDirection portdir = m_outports_idx2dirn[link];
+ 
+        std::cout << "to: " << portdir;
         std::cout << "\n";
-        
         /*NetDest rt = m_routing_table[link];
         rt.print(std::cout);
         std::cout << "\n";
         fflush(stdout);*/
         
-        if (route.net_dest.intersectionIsNotEmpty(m_routing_table[link])) {
+        if (portdir != "Local") {
             ncandidates++;
             output_link_candidates.push_back(link);
         }

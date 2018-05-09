@@ -20,9 +20,11 @@
 #               n_cycles: total number of cycles for which the simulation should run
 
 # Defaults:
-HIDEWARNERR=0     # Hide warnings and errors?
-NVCS=4            # Number of virtual channels (VC) per virtual network
-LINKWIDTHBITS=32  # Width in bits for all links inside the network
+HIDEWARNERR=0           # Bool: hide warnings and errors
+GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing
+NVCS=4                  # Number of virtual channels (VC) per virtual network
+LINKWIDTHBITS=32        # Width in bits for all links inside the network
+DEADLOCKTHRESHOLD=50    # Network-level deadlock threshold
 NCPU=16
 NROWS=2
 TOPO=Ring
@@ -30,6 +32,11 @@ IJRATE=0.2
 ROUTINGALGO=0
 SYNTH=uniform_random
 NCYCLES=10000
+
+# Send between specific router id's. -1: disable
+SENDER_ID=-1
+DEST_ID=-1
+
 
 if [ "$#" -gt 0 ]; then
     NCPU=$1
@@ -78,16 +85,19 @@ if [ -d $OUTDIR ]; then
 fi
 
 if [ $HIDEWARNERR -eq 1 ]; then
-    SUPP="-e --stderr-file=/dev/null"
+    HIDEWARNERR="-e --stderr-file=/dev/null"
 else
-    SUPP=""
+    HIDEWARNERR=""
 fi
 
-# Send between specific router id's
-SENDER_ID=15
-DEST_ID=0
-SEND_TO=""
+if [ $GARNETDEBUG -eq 1 ]; then
+    GARNETDEBUG="--debug-flags=RubyNetwork"
+else
+    GARNETDEBUG=""
+fi
 
+
+SEND_TO=""
 if [ ! $SENDER_ID -eq -1 ]; then
     SEND_TO+="--single-sender-id=$SENDER_ID"
 fi
@@ -98,7 +108,7 @@ fi
 # Set environment variable for recognizing simulation type in gem5 .py-files
 export GEM5SIMTYPE=GarnetStandalone
 
-./build/NULL/gem5.debug --dot-config=config.dot $SUPP -d $OUTDIR configs/example/garnet_synth_traffic.py \
+./build/NULL/gem5.debug -v $GARNETDEBUG $HIDEWARNERR -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPU \
 --num-dirs=$NCPU \
@@ -110,6 +120,7 @@ export GEM5SIMTYPE=GarnetStandalone
 --routing-algorithm=$ROUTINGALGO \
 --link-width-bits=$LINKWIDTHBITS \
 --vcs-per-vnet=$NVCS \
+--garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
 --inj-vnet=0 \
 --tikz $SEND_TO
 

@@ -182,7 +182,7 @@ class Mesh_XY(SimpleTopology):
 
                     src_id = col + (row * ncols)
                     dst_id = col + ((row + 1) * ncols)
-                    self.makeBiLink(src_id, dst_id, 1, "North", "South", IntLink)
+                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink)
 
         if not self.tikz_out is None:
             self.tikz_out.close()
