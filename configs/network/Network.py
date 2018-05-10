@@ -59,6 +59,10 @@ def define_options(parser):
     parser.add_option("--link-width-bits", action="store", type="int",
                       default=128,
                       help="width in bits for all links inside garnet.")
+    parser.add_option("--buffers-per-data-vc", action="store", type="int", default=4,
+                      help="""number of buffers per data virtual channel.""")
+    parser.add_option("--buffers-per-ctrl-vc", action="store", type="int", default=1,
+                      help="""number of buffers per control virtual channel.""")
     parser.add_option("--vcs-per-vnet", action="store", type="int", default=4,
                       help="""number of virtual channels per virtual network
                             inside garnet network.""")
@@ -107,6 +111,8 @@ def init_network(options, network, InterfaceClass):
     if options.network == "garnet2.0":
         network.num_rows = options.mesh_rows
         network.vcs_per_vnet = options.vcs_per_vnet
+        network.buffers_per_data_vc = options.buffers_per_data_vc
+        network.buffers_per_ctrl_vc = options.buffers_per_ctrl_vc
         network.ni_flit_size = options.link_width_bits / 8
         network.routing_algorithm = options.routing_algorithm
         network.garnet_deadlock_threshold = options.garnet_deadlock_threshold

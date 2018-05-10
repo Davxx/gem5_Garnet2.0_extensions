@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Script for running Garnet_standalone
+# Script for running Garnet_standalone simulations
 #
 # Usage: ./r n_cpus n_rows topology_py_file routing_algorithm \
 #            flit_injection_rate synthetic_traffic_type n_cycles
@@ -21,10 +21,10 @@
 
 # Defaults:
 HIDEWARNERR=0           # Bool: hide warnings and errors
-GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing
+GARNETDEBUG=1           # Bool: enable Ruby/Garnet2.0 debug printing
 NVCS=4                  # Number of virtual channels (VC) per virtual network
 LINKWIDTHBITS=32        # Width in bits for all links inside the network
-DEADLOCKTHRESHOLD=50    # Network-level deadlock threshold
+DEADLOCKTHRESHOLD=500     # Network-level deadlock threshold
 NCPU=16
 NROWS=2
 TOPO=Ring
@@ -38,8 +38,12 @@ SENDER_ID=-1
 DEST_ID=-1
 
 
-if [ "$#" -gt 0 ]; then
+if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
     NCPU=$1
+else
+    # Print help info
+    sed -n "3,20p" r
+    exit
 fi
 if [ "$#" -gt 1 ]; then
     NROWS=$2
@@ -60,7 +64,7 @@ if [ "$#" -gt 6 ]; then
     NCYCLES=$7
 fi
 
-# Supplement output dir name with routing algorithm
+# Suffix output dir name with routing algorithm
 case "$ROUTINGALGO" in
     0) RALGNAME=weighted_table_routing ;;
     1) RALGNAME=mesh_xy_routing ;;
@@ -91,7 +95,7 @@ else
 fi
 
 if [ $GARNETDEBUG -eq 1 ]; then
-    GARNETDEBUG="--debug-flags=RubyNetwork"
+    GARNETDEBUG="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
 else
     GARNETDEBUG=""
 fi
@@ -120,6 +124,8 @@ export GEM5SIMTYPE=GarnetStandalone
 --routing-algorithm=$ROUTINGALGO \
 --link-width-bits=$LINKWIDTHBITS \
 --vcs-per-vnet=$NVCS \
+--buffers-per-data-vc=8 \
+--buffers-per-ctrl-vc=2 \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
 --inj-vnet=0 \
 --tikz $SEND_TO

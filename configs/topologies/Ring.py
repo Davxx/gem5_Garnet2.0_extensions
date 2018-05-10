@@ -29,6 +29,7 @@ class Ring(SimpleTopology):
 
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
         # Makes a bidirectional link between self.routers src_id and dst_id
+        weight_base = dst_id if dst_id > 0 else self.nrouters
 
         self.int_links.append(IntLink(link_id=self.link_count,
                                       src_node=self.routers[src_id],
@@ -52,6 +53,7 @@ class Ring(SimpleTopology):
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
         num_routers = options.num_cpus
+        self.nrouters = num_routers ##################
 
         # Number of rows must == 2
         options.mesh_rows = 2
@@ -151,9 +153,13 @@ class Ring(SimpleTopology):
                 dst_npxindex = np.argwhere(ring == dst_id)[0][0]
 
                 if dst_npxindex != x:
-                    # Destination router is on a different row ==> Vertical link (weight = 2)
-
-                    self.makeBiLink(src_id, dst_id, 2, "South", "North", IntLink)
+                    # Destination router is on a different row ==> Vertical link (weight = 1)
+                    if flip_horizontal:
+                        # West vertical link
+                        self.makeBiLink(src_id, dst_id, 1, "South", "North", IntLink)
+                    else:
+                        # East vertical link
+                        self.makeBiLink(src_id, dst_id, 1, "North", "South", IntLink)
                 else:
                     # Horizontal link (weight = 1)
 

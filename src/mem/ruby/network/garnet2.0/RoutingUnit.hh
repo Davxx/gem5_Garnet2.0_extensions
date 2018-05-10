@@ -56,7 +56,7 @@ class RoutingUnit
     void addWeight(int link_weight);
 
     // get output port from routing table
-    int  lookupRoutingTable(int vnet, NetDest net_dest);
+    int  lookupRoutingTable(RouteInfo route);
 
     // Topology-specific direction based routing
     void addInDirection(PortDirection inport_dirn, int inport);

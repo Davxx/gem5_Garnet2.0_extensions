@@ -93,17 +93,17 @@ OutputUnit::has_credit(int out_vc)
 }
 
 
-// Check if the output port (i.e., input port at next router) has free VCs.
-bool
-OutputUnit::has_free_vc(int vnet)
+// Return highest free VC at the output port (i.e., input port at next router)
+int
+OutputUnit::free_vc(int vnet)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++) {
+    for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
         if (is_vc_idle(vc, m_router->curCycle()))
-            return true;
+            return vc;
     }
 
-    return false;
+    return -1;
 }
 
 // Assign a free output VC to the winner of Switch Allocation
@@ -111,7 +111,7 @@ int
 OutputUnit::select_free_vc(int vnet)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    for (int vc = vc_base; vc < vc_base + m_vc_per_vnet; vc++) {
+    for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
         if (is_vc_idle(vc, m_router->curCycle())) {
             m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
             return vc;

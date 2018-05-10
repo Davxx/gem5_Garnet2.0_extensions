@@ -130,6 +130,7 @@ SwitchAllocator::arbitrate_inports()
                 // send_allowed conditions described in that function.
                 bool make_request =
                     send_allowed(inport, invc, outport, outvc);
+                printf("send_allowed=%d\n\n", (int)make_request);
 
                 if (make_request) {
                     m_input_arbiter_activity++;
@@ -287,33 +288,66 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     // Check if credit needed (for multi-flit packet)
     // Check if ordering violated (in ordered vnet)
 
+    PortDirection indir = m_input_unit[inport]->get_direction();
+    PortDirection dest_outport_dir = m_input_unit[outport]->get_direction();
+
     int vnet = get_vnet(invc);
-    bool has_outvc = (outvc != -1);
+    int router_id = m_router->get_id();
+
     bool has_credit = false;
 
-    if (!has_outvc) {
-
+    if (outvc == -1) {
         // needs outvc
         // this is only true for HEAD and HEAD_TAIL flits.
+        outvc = m_output_unit[outport]->free_vc(vnet);
 
-        if (m_output_unit[outport]->has_free_vc(vnet)) {
-
-            has_outvc = true;
-
+        if (outvc != -1) {
             // each VC has at least one buffer,
             // so no need for additional credit check
             has_credit = true;
         }
     } else {
         has_credit = m_output_unit[outport]->has_credit(outvc);
-        //printf("router id: %d, inport: %d, invc: %d, outport: %d, outvc: %d, vnetin: %d, vnetout: %d\n", m_router->get_id(), inport, invc, outport, outvc, vnet, get_vnet(outvc));
+    }
+    
+    printf("router id: %d, inport: %d=", router_id, inport);
+    std::cout << m_router->getPortDirectionName(indir);
+
+    printf(", invc: %d, outport: %d=", invc, outport);
+    std::cout << m_router->getPortDirectionName(dest_outport_dir);
+    
+    printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
+    
+    // cannot send if no outvc or no credit.
+    if (outvc == -1 || !has_credit) {
+        printf("denied: outvc=%d, has_credit=%d\n", outvc, (int)has_credit);
+        return false;
     }
 
-    // cannot send if no outvc or no credit.
-    if (!has_outvc || !has_credit)
+    // Escape VC deadlock avoidance for Ring topology.
+    // VC=0 is acyclic escape VC; other VC's can be cyclic.
+    if (invc == 0 && outvc == 0) {
+        if ((router_id == 15 && dest_outport_dir == "South") ||
+            (router_id == 0 && dest_outport_dir == "North")) {
+            printf("skipping router %d dest_outport_dir=", router_id);
+            std::cout << dest_outport_dir << "\n";
+            return false;
+        }
+        if ((router_id >= 0 && router_id <= 7 && dest_outport_dir == "West") ||
+            (router_id == 8 && dest_outport_dir == "South") ||
+            (router_id >= 8 && router_id <= 15 && dest_outport_dir == "East")) {
+            printf("skipping router %d dest_outport_dir=", router_id);
+            std::cout << dest_outport_dir << "\n";
+            return false;
+        }
+    }
+    if (indir == "Local" && outvc != invc)
+      return false;
+    /*if (invc == 0 && outvc != 0) {
+        printf("packet not allowed to leave vc\n");
         return false;
-
-
+    }*/
+    
     // protocol ordering check
     if ((m_router->get_net_ptr())->isVNetOrdered(vnet)) {
 
@@ -334,10 +368,6 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
             }
         }
     }
-
-    // router 15
-    /*if (m_router->get_id() == 15 && invc == outvc)
-        return false;*/
 
     return true;
 }

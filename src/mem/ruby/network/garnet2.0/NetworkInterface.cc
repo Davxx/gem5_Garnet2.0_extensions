@@ -414,15 +414,16 @@ NetworkInterface::calculateVC(int vnet)
         if (m_out_vc_state[(vnet*m_vc_per_vnet) + delta]->isInState(
                     IDLE_, curCycle())) {
             vc_busy_counter[vnet] = 0;
+            printf("returned vc=%d\n", (vnet*m_vc_per_vnet) + delta);
             return ((vnet*m_vc_per_vnet) + delta);
         }
     }
 
     vc_busy_counter[vnet] += 1;
+    printf("vc_busy_counter=%d for vnet=%d\n", vc_busy_counter[vnet], vnet);
     panic_if(vc_busy_counter[vnet] > m_deadlock_threshold,
         "%s: Possible network deadlock in vnet: %d at time: %llu \n",
         name(), vnet, curTick());
-
     return -1;
 }
 

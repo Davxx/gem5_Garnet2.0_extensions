@@ -65,7 +65,7 @@ RoutingUnit::addWeight(int link_weight)
  */
 
 int
-RoutingUnit::lookupRoutingTable(int vnet, NetDest msg_destination)
+RoutingUnit::lookupRoutingTable(RouteInfo route)
 {
     // First find all possible output link candidates
     // For ordered vnet, just choose the first
@@ -73,19 +73,35 @@ RoutingUnit::lookupRoutingTable(int vnet, NetDest msg_destination)
     // For unordered vnet, randomly choose any of the links
     // To have a strict ordering between links, they should be given
     // different weights in the topology file
+    int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
+    int num_cols = m_router->get_net_ptr()->getNumCols();
+    
+    int my_id = m_router->get_id();
+    int my_x = my_id % num_cols;
+    int my_y = my_id / num_cols;
 
-    int output_link = -1;
+    int dest_id = route.dest_router;
+    int dest_x = dest_id % num_cols;
+    int dest_y = dest_id / num_cols;
+    
+    int vnet = route.vnet;
+    NetDest msg_destination = route.net_dest;
+    
     int min_weight = INFINITE_;
     std::vector<int> output_link_candidates;
-    int num_candidates = 0;
+    int ncandidates = 0;
 
     // Identify the minimum weight among the candidate output links
     for (int link = 0; link < m_routing_table.size(); link++) {
+        PortDirection portdir = m_outports_idx2dirn[link];
+        std::cout << "to: " << portdir;
         if (msg_destination.intersectionIsNotEmpty(m_routing_table[link])) {
+            std::cout << " = possible";
 
             if (m_weight_table[link] <= min_weight)
                 min_weight = m_weight_table[link];
         }
+        std::cout << "\n";
     }
 
     // Collect all candidate output links with this minimum weight
@@ -94,7 +110,7 @@ RoutingUnit::lookupRoutingTable(int vnet, NetDest msg_destination)
 
             if (m_weight_table[link] == min_weight) {
 
-                num_candidates++;
+                ncandidates++;
                 output_link_candidates.push_back(link);
             }
         }
@@ -108,10 +124,11 @@ RoutingUnit::lookupRoutingTable(int vnet, NetDest msg_destination)
     // Randomly select any candidate output link
     int candidate = 0;
     if (!(m_router->get_net_ptr())->isVNetOrdered(vnet))
-        candidate = rand() % num_candidates;
+        candidate = rand() % ncandidates;
 
-    output_link = output_link_candidates.at(candidate);
-    return output_link;
+    std::cout << "selected_dir=" << m_outports_idx2dirn[output_link_candidates.at(candidate)];
+    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n", ncandidates, my_id, dest_id);
+    return output_link_candidates.at(candidate);
 }
 
 
@@ -146,7 +163,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
         // Multiple NIs may be connected to this router,
         // all with output port direction = "Local"
         // Get exact outport id from table
-        outport = lookupRoutingTable(route.vnet, route.net_dest);
+        outport = lookupRoutingTable(route);
         return outport;
     }
 
@@ -157,7 +174,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
 
     switch (routing_algorithm) {
         case TABLE_:    outport =
-            lookupRoutingTable(route.vnet, route.net_dest); break;
+            lookupRoutingTable(route); break;
         case XY_:       outport =
             outportComputeXY(route, inport, inport_dirn); break;
         case RANDOM_:   outport =
@@ -165,7 +182,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
         case ADAPTIVE_: outport =
             outportComputeAdaptive(route, inport, inport_dirn); break;
         default:        outport =
-            lookupRoutingTable(route.vnet, route.net_dest); break;
+            lookupRoutingTable(route); break;
     }
 
     assert(outport != -1);
@@ -257,7 +274,6 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
         PortDirection portdir = m_outports_idx2dirn[link];
  
         std::cout << "to: " << portdir;
-        std::cout << "\n";
         /*NetDest rt = m_routing_table[link];
         rt.print(std::cout);
         std::cout << "\n";
@@ -266,7 +282,9 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
         if (portdir != "Local") {
             ncandidates++;
             output_link_candidates.push_back(link);
+            std::cout << " = possible";
         }
+        std::cout << "\n";
     }
 
 
@@ -279,7 +297,7 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
     int candidate = rand() % ncandidates;
 
     std::cout << "selected_dir=" << m_outports_idx2dirn[output_link_candidates.at(candidate)];
-    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n\n", ncandidates, my_id, dest_id);
+    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n", ncandidates, my_id, dest_id);
     fflush(stdout);
     
     return output_link_candidates.at(candidate);
