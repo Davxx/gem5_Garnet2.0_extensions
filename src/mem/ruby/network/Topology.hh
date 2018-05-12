@@ -59,6 +59,7 @@ struct LinkEntry
     BasicLink *link;
     PortDirection src_outport_dirn;
     PortDirection dst_inport_dirn;
+    int escapevc_dor;
 };
 
 typedef std::map<std::pair<SwitchID, SwitchID>, LinkEntry> LinkMap;
@@ -76,7 +77,8 @@ class Topology
   private:
     void addLink(SwitchID src, SwitchID dest, BasicLink* link,
                  PortDirection src_outport_dirn = "",
-                 PortDirection dest_inport_dirn = "");
+                 PortDirection dest_inport_dirn = "",
+                 int escapevc_dor = 1);
     void makeLink(Network *net, SwitchID src, SwitchID dest,
                   const NetDest& routing_table_entry);
 

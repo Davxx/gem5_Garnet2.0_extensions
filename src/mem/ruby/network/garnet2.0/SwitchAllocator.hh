@@ -41,6 +41,7 @@
 #include "mem/ruby/network/garnet2.0/CommonTypes.hh"
 
 class Router;
+class RoutingUnit;
 class InputUnit;
 class OutputUnit;
 
@@ -79,6 +80,7 @@ class SwitchAllocator : public Consumer
     double m_input_arbiter_activity, m_output_arbiter_activity;
 
     Router *m_router;
+    RoutingUnit *m_routing_unit;
     std::vector<int> m_round_robin_invc;
     std::vector<int> m_round_robin_inport;
     std::vector<std::vector<bool>> m_port_requests;

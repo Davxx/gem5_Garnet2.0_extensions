@@ -43,6 +43,8 @@ RoutingUnit::RoutingUnit(Router *router)
     m_router = router;
     m_routing_table.clear();
     m_weight_table.clear();
+    m_escapevc_dor_in_table.clear();
+    m_escapevc_dor_out_table.clear();
 }
 
 void
@@ -144,6 +146,44 @@ RoutingUnit::addOutDirection(PortDirection outport_dirn, int outport_idx)
 {
     m_outports_dirn2idx[outport_dirn] = outport_idx;
     m_outports_idx2dirn[outport_idx]  = outport_dirn;
+}
+
+void
+RoutingUnit::addInEscapeVcDor(int dor, int port, bool obeys_dor_dirn)
+{
+    printf("dor=%d\n", dor);
+    m_escapevc_inport2dor[port] = dor;
+    m_escapevc_dor_in_table.push_back(dor);
+}
+
+void
+RoutingUnit::addOutEscapeVcDor(int dor, int port, bool obeys_dor_dirn)
+{
+    int out_dor = getEscapeVcDorOfPrevLink(dor, port, obeys_dor_dirn);
+    printf("out_old_dor=%d, new_dor=%d\n", dor, out_dor);
+    m_escapevc_outport2dor[port] = out_dor;
+    m_escapevc_dor_out_table.push_back(out_dor);
+}
+
+int
+RoutingUnit::getInEscapeVcDor(int port)
+{
+    return m_escapevc_inport2dor[port];
+}
+
+int
+RoutingUnit::getOutEscapeVcDor(int port)
+{
+    return m_escapevc_outport2dor[port];
+}
+
+int
+RoutingUnit::getEscapeVcDorOfPrevLink(int dor, int port, bool obeys_dor_dirn)
+{
+    if (dor == -1)
+        return -1;
+
+    return dor - 1;
 }
 
 // outportCompute() is called by the InputUnit

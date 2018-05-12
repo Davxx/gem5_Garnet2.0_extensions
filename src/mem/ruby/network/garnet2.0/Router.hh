@@ -66,11 +66,14 @@ class Router : public BasicRouter, public Consumer
     void print(std::ostream& out) const {};
 
     void init();
+
     void addInPort(PortDirection inport_dirn, NetworkLink *link,
-                   CreditLink *credit_link);
+                   CreditLink *credit_link, int escapevc_dor,
+                   bool obeys_dor_dirn);
     void addOutPort(PortDirection outport_dirn, NetworkLink *link,
                     const NetDest& routing_table_entry,
-                    int link_weight, CreditLink *credit_link);
+                    int link_weight, CreditLink *credit_link,
+                    int escapevc_dor, bool obeys_dor_dirn);
 
     Cycles get_pipe_stages(){ return m_latency; }
     int get_num_vcs()       { return m_num_vcs; }
@@ -88,6 +91,7 @@ class Router : public BasicRouter, public Consumer
     GarnetNetwork* get_net_ptr()                    { return m_network_ptr; }
     std::vector<InputUnit *>& get_inputUnit_ref()   { return m_input_unit; }
     std::vector<OutputUnit *>& get_outputUnit_ref() { return m_output_unit; }
+    RoutingUnit* get_routingUnit_ref()              { return m_routing_unit; }
     PortDirection getOutportDirection(int outport);
     PortDirection getInportDirection(int inport);
 

@@ -38,6 +38,9 @@
 #include "mem/ruby/network/garnet2.0/InputUnit.hh"
 #include "mem/ruby/network/garnet2.0/OutputUnit.hh"
 #include "mem/ruby/network/garnet2.0/Router.hh"
+#include "Router.hh"
+#include "mem/ruby/network/garnet2.0/RoutingUnit.hh"
+#include "RoutingUnit.hh"
 
 SwitchAllocator::SwitchAllocator(Router *router)
     : Consumer(router)
@@ -55,6 +58,7 @@ SwitchAllocator::init()
 {
     m_input_unit = m_router->get_inputUnit_ref();
     m_output_unit = m_router->get_outputUnit_ref();
+    m_routing_unit = m_router->get_routingUnit_ref();
 
     m_num_inports = m_router->get_num_inports();
     m_num_outports = m_router->get_num_outports();
@@ -111,12 +115,12 @@ SwitchAllocator::wakeup()
 void
 SwitchAllocator::arbitrate_inports()
 {
-    // Select a VC from each input in a round robin manner
+    // Select a VC from each input in a reverse round robin manner
     // Independent arbiter at each input port
-    for (int inport = 0; inport < m_num_inports; inport++) {
+    for (int inport = m_num_inports - 1; inport >= 0; inport--) {
         int invc = m_round_robin_invc[inport];
 
-        for (int invc_iter = 0; invc_iter < m_num_vcs; invc_iter++) {
+        for (int invc_iter = m_num_vcs - 1; invc_iter >= 0; invc_iter--) {
 
             if (m_input_unit[inport]->need_stage(invc, SA_,
                 m_router->curCycle())) {
@@ -146,9 +150,9 @@ SwitchAllocator::arbitrate_inports()
                 }
             }
 
-            invc++;
-            if (invc >= m_num_vcs)
-                invc = 0;
+            invc--;
+            if (invc < 0)
+                invc = m_num_vcs - 1;
         }
     }
 }
@@ -171,13 +175,13 @@ void
 SwitchAllocator::arbitrate_outports()
 {
     // Now there are a set of input vc requests for output vcs.
-    // Again do round robin arbitration on these requests
+    // Again do reverse round robin arbitration on these requests
     // Independent arbiter at each output port
-    for (int outport = 0; outport < m_num_outports; outport++) {
+    for (int outport = m_num_outports - 1; outport >= 0; outport--) {
         int inport = m_round_robin_inport[outport];
 
-        for (int inport_iter = 0; inport_iter < m_num_inports;
-                 inport_iter++) {
+        for (int inport_iter = m_num_inports - 1; inport_iter >= 0;
+             inport_iter--) {
 
             // inport has a request this cycle for outport
             if (m_port_requests[outport][inport]) {
@@ -260,9 +264,9 @@ SwitchAllocator::arbitrate_outports()
                 break; // got a input winner for this outport
             }
 
-            inport++;
-            if (inport >= m_num_inports)
-                inport = 0;
+            inport--;
+            if (inport < 0)
+                inport = m_num_inports - 1;
         }
     }
 }
@@ -288,8 +292,8 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     // Check if credit needed (for multi-flit packet)
     // Check if ordering violated (in ordered vnet)
 
-    PortDirection indir = m_input_unit[inport]->get_direction();
-    PortDirection dest_outport_dir = m_input_unit[outport]->get_direction();
+    PortDirection src_dirn = m_input_unit[inport]->get_direction();
+    PortDirection dest_dirn = m_input_unit[outport]->get_direction();
 
     int vnet = get_vnet(invc);
     int router_id = m_router->get_id();
@@ -309,12 +313,16 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     } else {
         has_credit = m_output_unit[outport]->has_credit(outvc);
     }
+
+    int in_dor = m_routing_unit->getInEscapeVcDor(inport);
+    int out_dor = m_routing_unit->getOutEscapeVcDor(outport);
+    printf("in_dor=%d, out_dor=%d\n", in_dor, out_dor);
     
     printf("router id: %d, inport: %d=", router_id, inport);
-    std::cout << m_router->getPortDirectionName(indir);
+    std::cout << m_router->getPortDirectionName(src_dirn);
 
     printf(", invc: %d, outport: %d=", invc, outport);
-    std::cout << m_router->getPortDirectionName(dest_outport_dir);
+    std::cout << m_router->getPortDirectionName(dest_dirn);
     
     printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
     
@@ -327,22 +335,26 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     // Escape VC deadlock avoidance for Ring topology.
     // VC=0 is acyclic escape VC; other VC's can be cyclic.
     if (invc == 0 && outvc == 0) {
-        if ((router_id == 15 && dest_outport_dir == "South") ||
-            (router_id == 0 && dest_outport_dir == "North")) {
-            printf("skipping router %d dest_outport_dir=", router_id);
-            std::cout << dest_outport_dir << "\n";
+        // Disallow traffic between the first and last nodes on the ring
+        if ((router_id == 15 && dest_dirn == "South") ||
+            (router_id == 0 && dest_dirn == "North")) {
+            printf("skipping router %d dest_dirn=", router_id);
+            std::cout << dest_dirn << "\n";
             return false;
         }
-        if ((router_id >= 0 && router_id <= 7 && dest_outport_dir == "West") ||
-            (router_id == 8 && dest_outport_dir == "South") ||
-            (router_id >= 8 && router_id <= 15 && dest_outport_dir == "East")) {
-            printf("skipping router %d dest_outport_dir=", router_id);
-            std::cout << dest_outport_dir << "\n";
+        // Restrict traffic direction on the escape VC to counter-clockwise
+        // (East-first)
+        if ((router_id >= 0 && router_id <= 7 && dest_dirn == "West") ||
+            (router_id == 8 && dest_dirn == "South") ||
+            (router_id >= 8 && router_id <= 15 && dest_dirn == "East")) {
+            printf("skipping router %d dest_dirn=", router_id);
+            std::cout << dest_dirn << "\n";
             return false;
         }
     }
-    if (indir == "Local" && outvc != invc)
-      return false;
+    // Disallow local VC transfers, i.e. router_x.vc_i to router_x_vc_j | i!=j
+    if (src_dirn == "Local" && outvc != invc)
+        return false;
     /*if (invc == 0 && outvc != 0) {
         printf("packet not allowed to leave vc\n");
         return false;

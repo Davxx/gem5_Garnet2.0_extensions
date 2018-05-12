@@ -26,3 +26,4 @@ if os.path.isfile(in_file_name):
                 with open(out_file_name, "wt") as fout:
                     shutil.copyfileobj(fin, fout)
                     break
+        print "Network stats written to: " + out_file_name

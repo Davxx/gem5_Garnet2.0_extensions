@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Script for running Garnet_standalone simulations
+# Script for running GarnetStandalone simulations
 #
 # Usage: ./r n_cpus n_rows topology_py_file routing_algorithm \
 #            flit_injection_rate synthetic_traffic_type n_cycles
@@ -10,21 +10,26 @@
 #       topology_py_file: name of the .py-file in configs/topologies/
 #      routing_algorithm: routing algorithm in network, implemented in
 #                         src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
-#                         0: Weight-based table
-#                         1: XY (for Mesh)
-#                         2: Random (custom)
-#                         3: Adaptive (custom)
+#                           0: Weight-based table
+#                           1: XY (for Mesh)
+#                           2: Random (custom)
+#                           3: Adaptive (custom)
 #    flit_injection_rate: traffic injection rate in packets/node/cycle
 # synthetic_traffic_type: uniform_random, tornado, bit_complement, bit_reverse,
 #                         bit_rotation, neighbor, shuffle, transpose
 #               n_cycles: total number of cycles for which the simulation should run
 
 # Defaults:
-HIDEWARNERR=0           # Bool: hide warnings and errors
-GARNETDEBUG=1           # Bool: enable Ruby/Garnet2.0 debug printing
+HIDEWARNERROR=0         # Bool: hide warnings and errors
+GARNETDEBUG=1           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
 NVCS=4                  # Number of virtual channels (VC) per virtual network
+NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
+NBUFFERS_PER_CTRL_VC=1  # Number of buffers per data VC
 LINKWIDTHBITS=32        # Width in bits for all links inside the network
-DEADLOCKTHRESHOLD=500     # Network-level deadlock threshold
+DEADLOCKTHRESHOLD=500   # Network-level deadlock threshold
+INJVNET=0               # Only inject in this vnet (0, 1 or 2).
+                        #   0 and 1 are 1-flit, 2 is 5-flit.
+                        #   Set to -1 to inject randomly in all vnets.
 NCPU=16
 NROWS=2
 TOPO=Ring
@@ -34,9 +39,8 @@ SYNTH=uniform_random
 NCYCLES=10000
 
 # Send between specific router id's. -1: disable
-SENDER_ID=-1
-DEST_ID=-1
-
+SENDER_ID=7
+DEST_ID=9
 
 if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
     NCPU=$1
@@ -87,32 +91,37 @@ if [ -d $OUTDIR ]; then
         fi
     done
 fi
+mkdir -p $OUTDIR
 
-if [ $HIDEWARNERR -eq 1 ]; then
-    HIDEWARNERR="-e --stderr-file=/dev/null"
-else
-    HIDEWARNERR=""
-fi
-
+# Redirect stdout
 if [ $GARNETDEBUG -eq 1 ]; then
-    GARNETDEBUG="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+    GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
 else
-    GARNETDEBUG=""
+    GARNETDEBUG_FLAGS=""
+    GARNETDEBUG_TOFILE=""
+    GARNETDEBUG_PIPE=""
 fi
 
+# Redirect stderr
+if [ $HIDEWARNERROR -eq 1 ]; then
+    HIDEWARNERROR="-e --stderr-file=/dev/null"
+else
+    HIDEWARNERROR=""
+fi
 
-SEND_TO=""
+SEND_TO_ROUTER_IDS=""
 if [ ! $SENDER_ID -eq -1 ]; then
-    SEND_TO+="--single-sender-id=$SENDER_ID"
+    SEND_TO_ROUTER_IDS+="--single-sender-id=$SENDER_ID"
 fi
 if [ ! $DEST_ID -eq -1 ]; then
-    SEND_TO+=" --single-dest-id=$DEST_ID"
+    SEND_TO_ROUTER_IDS+=" --single-dest-id=$DEST_ID"
 fi
 
 # Set environment variable for recognizing simulation type in gem5 .py-files
 export GEM5SIMTYPE=GarnetStandalone
 
-./build/NULL/gem5.debug -v $GARNETDEBUG $HIDEWARNERR -d $OUTDIR configs/example/garnet_synth_traffic.py \
+RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $GARNETDEBUG_FLAGS -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPU \
 --num-dirs=$NCPU \
@@ -124,10 +133,31 @@ export GEM5SIMTYPE=GarnetStandalone
 --routing-algorithm=$ROUTINGALGO \
 --link-width-bits=$LINKWIDTHBITS \
 --vcs-per-vnet=$NVCS \
---buffers-per-data-vc=8 \
---buffers-per-ctrl-vc=2 \
+--buffers-per-data-vc=$NBUFFERS_PER_DATA_VC \
+--buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
---inj-vnet=0 \
---tikz $SEND_TO
+--inj-vnet=$INJVNET \
+--tikz $SEND_TO_ROUTER_IDS"
 
-python getnetworkstats.py $OUTDIR
+redirect_cmd() {
+    if [ $GARNETDEBUG -eq 1 ]; then
+        "$@" > "$GARNETDEBUG_TOFILE"
+        return $?
+    else
+        "$@"
+        return $?
+    fi
+}
+
+redirect_cmd $RUNCMD
+
+# Simulation output parsing
+EXITCODE=$?
+if [ $GARNETDEBUG -eq 1 ]; then
+    python grepdebug.py "$GARNETDEBUG_TOFILE"
+fi
+if [ $EXITCODE -eq 0 ]; then
+    python grepnetworkstats.py $OUTDIR
+else
+    rmdir $OUTDIR &> /dev/null
+fi

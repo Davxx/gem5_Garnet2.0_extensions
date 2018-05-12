@@ -103,7 +103,8 @@ class Network : public ClockedObject
     virtual void makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
                                   const NetDest& routing_table_entry,
                                   PortDirection src_outport,
-                                  PortDirection dst_inport) = 0;
+                                  PortDirection dst_inport,
+                                  int escapevc_dor) = 0;
 
     virtual void collateStats() = 0;
     virtual void print(std::ostream& out) const = 0;

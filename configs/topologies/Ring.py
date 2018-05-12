@@ -29,7 +29,6 @@ class Ring(SimpleTopology):
 
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
         # Makes a bidirectional link between self.routers src_id and dst_id
-        weight_base = dst_id if dst_id > 0 else self.nrouters
 
         self.int_links.append(IntLink(link_id=self.link_count,
                                       src_node=self.routers[src_id],
@@ -37,14 +36,16 @@ class Ring(SimpleTopology):
                                       src_outport=src_outport,
                                       dst_inport=dst_inport,
                                       latency=self.link_latency,
-                                      weight=weight))
+                                      weight=weight,
+                                      escapevc_dor=dst_id))
         self.int_links.append(IntLink(link_id=self.link_count + 1,
                                       src_node=self.routers[dst_id],
                                       dst_node=self.routers[src_id],
                                       src_outport=dst_inport,
                                       dst_inport=src_outport,
                                       latency=self.link_latency,
-                                      weight=weight))
+                                      weight=weight,
+                                      escapevc_dor=-1))
 
         thick_line = "line width=1mm" if weight == 1 else ""
         self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, thick_line, dst_id))
@@ -52,8 +53,7 @@ class Ring(SimpleTopology):
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
-        num_routers = options.num_cpus
-        self.nrouters = num_routers ##################
+        self.nrouters = options.num_cpus
 
         # Number of rows must == 2
         options.mesh_rows = 2
@@ -66,13 +66,13 @@ class Ring(SimpleTopology):
 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
-        cntrls_per_router, remainder = divmod(len(nodes), num_routers)
-        assert(nrows > 0 and nrows <= num_routers)
-        ncols = int(num_routers / nrows)
-        assert(ncols * nrows == num_routers)
+        cntrls_per_router, remainder = divmod(len(nodes), self.nrouters)
+        assert(nrows > 0 and nrows <= self.nrouters)
+        ncols = int(self.nrouters / nrows)
+        assert(ncols * nrows == self.nrouters)
 
         # There must be an even number of routers
-        assert(num_routers % 2 == 0)
+        assert(self.nrouters % 2 == 0)
 
         # Optionally generate Tikz topology code in 'output_directory/topo.tex' and
         # convert it to 'output_directory/topology.png'
@@ -80,7 +80,7 @@ class Ring(SimpleTopology):
             self.tikz_out = TikzTopology(m5.options.outdir, nrows, ncols)
 
         # Create the routers on the ring
-        self.routers = [Router(router_id=i, latency = router_latency) for i in range(num_routers)]
+        self.routers = [Router(router_id=i, latency = router_latency) for i in range(self.nrouters)]
         network.routers = self.routers
 
         # Link counter to set unique link ids
@@ -100,7 +100,7 @@ class Ring(SimpleTopology):
         # These should be of type L1Cache_Controllers or Directory_Controller
         ext_links = []
         for (i, node) in enumerate(network_nodes):
-            cntrl_level, router_id = divmod(i, num_routers)
+            cntrl_level, router_id = divmod(i, self.nrouters)
             assert(cntrl_level < cntrls_per_router)
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[router_id],
@@ -149,7 +149,7 @@ class Ring(SimpleTopology):
         for x in xrange(nrows - 1, -1, -1):
             for y in xrange(ncols):
                 src_id = ring[x][ncols - 1 - y] if flip_horizontal else ring[x][y]
-                dst_id = (src_id + 1) % num_routers
+                dst_id = (src_id + 1) % self.nrouters
                 dst_npxindex = np.argwhere(ring == dst_id)[0][0]
 
                 if dst_npxindex != x:
