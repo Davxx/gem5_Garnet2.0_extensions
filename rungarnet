@@ -39,8 +39,8 @@ SYNTH=uniform_random
 NCYCLES=10000
 
 # Send between specific router id's. -1: disable
-SENDER_ID=7
-DEST_ID=9
+SENDER_ID=-1
+DEST_ID=-1
 
 if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
     NCPU=$1

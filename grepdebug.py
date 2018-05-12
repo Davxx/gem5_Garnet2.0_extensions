@@ -8,7 +8,7 @@ import sys
 
 # Options
 in_file = "debug.txt" # default file name in case no args supplied
-greps = ["vc_busy_counter"]
+greps = ["dor", "vc_busy_counter"]
 mixed_greps = False
 sorting = True
 

@@ -29,7 +29,14 @@ class Ring(SimpleTopology):
 
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
         # Makes a bidirectional link between self.routers src_id and dst_id
+        
+        # Within the escape VC, cut ring between the first and last nodes;
+        # in becoming acyclic, it prevents potential deadlocks
+        escapevc_dor = src_id + 1
+        if src_id == self.nrouters - 1 and dst_id == 0:
+            escapevc_dor = -1
 
+        # src->dst link
         self.int_links.append(IntLink(link_id=self.link_count,
                                       src_node=self.routers[src_id],
                                       dst_node=self.routers[dst_id],
@@ -37,7 +44,10 @@ class Ring(SimpleTopology):
                                       dst_inport=dst_inport,
                                       latency=self.link_latency,
                                       weight=weight,
-                                      escapevc_dor=dst_id))
+                                      escapevc_dor=escapevc_dor))
+
+        # dst->src link. Since the ring is built up counterclockwise, this link
+        # is prohibited in escape VC DOR traversal => gets a DOR value of -1
         self.int_links.append(IntLink(link_id=self.link_count + 1,
                                       src_node=self.routers[dst_id],
                                       dst_node=self.routers[src_id],

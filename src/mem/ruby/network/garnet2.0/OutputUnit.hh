@@ -94,6 +94,8 @@ class OutputUnit : public Consumer
         m_out_link->scheduleEventAbsolute(m_router->clockEdge(Cycles(1)));
     }
 
+    NetworkLink* get_outLink_Ref() { return m_out_link; }
+
     uint32_t functionalWrite(Packet *pkt);
 
   private:

@@ -149,20 +149,17 @@ RoutingUnit::addOutDirection(PortDirection outport_dirn, int outport_idx)
 }
 
 void
-RoutingUnit::addInEscapeVcDor(int dor, int port, bool obeys_dor_dirn)
+RoutingUnit::addInEscapeVcDor(int dor, int port)
 {
-    printf("dor=%d\n", dor);
     m_escapevc_inport2dor[port] = dor;
     m_escapevc_dor_in_table.push_back(dor);
 }
 
 void
-RoutingUnit::addOutEscapeVcDor(int dor, int port, bool obeys_dor_dirn)
+RoutingUnit::addOutEscapeVcDor(int dor, int port)
 {
-    int out_dor = getEscapeVcDorOfPrevLink(dor, port, obeys_dor_dirn);
-    printf("out_old_dor=%d, new_dor=%d\n", dor, out_dor);
-    m_escapevc_outport2dor[port] = out_dor;
-    m_escapevc_dor_out_table.push_back(out_dor);
+    m_escapevc_outport2dor[port] = dor;
+    m_escapevc_dor_out_table.push_back(dor);
 }
 
 int
@@ -175,15 +172,6 @@ int
 RoutingUnit::getOutEscapeVcDor(int port)
 {
     return m_escapevc_outport2dor[port];
-}
-
-int
-RoutingUnit::getEscapeVcDorOfPrevLink(int dor, int port, bool obeys_dor_dirn)
-{
-    if (dor == -1)
-        return -1;
-
-    return dor - 1;
 }
 
 // outportCompute() is called by the InputUnit
@@ -203,6 +191,7 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
         // Multiple NIs may be connected to this router,
         // all with output port direction = "Local"
         // Get exact outport id from table
+        printf("Local route!\n");
         outport = lookupRoutingTable(route);
         return outport;
     }
@@ -305,6 +294,9 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
     int dest_id = route.dest_router;
     int dest_x = dest_id % num_cols;
     int dest_y = dest_id / num_cols;
+
+    bool x_dirn = (dest_x >= my_x);
+    bool y_dirn = (dest_y >= my_y);
     
     std::vector<int> output_link_candidates;
     int ncandidates = 0;

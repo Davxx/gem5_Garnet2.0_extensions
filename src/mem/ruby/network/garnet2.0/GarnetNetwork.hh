@@ -96,7 +96,7 @@ class GarnetNetwork : public Network
                           const NetDest& routing_table_entry,
                           PortDirection src_outport_dirn,
                           PortDirection dest_inport_dirn,
-                          int escapevc_dor);
+                          int escapevc_dor_src, int escapevc_dor_dest);
 
     //! Function for performing a functional write. The return value
     //! indicates the number of messages that were written.

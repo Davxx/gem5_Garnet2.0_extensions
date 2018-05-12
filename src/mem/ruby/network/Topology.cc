@@ -36,6 +36,8 @@
 #include "mem/ruby/network/BasicLink.hh"
 #include "mem/ruby/network/Network.hh"
 #include "mem/ruby/slicc_interface/AbstractController.hh"
+#include "Topology.hh"
+#include "Network.hh"
 
 using namespace std;
 
@@ -188,14 +190,18 @@ Topology::makeLink(Network *net, SwitchID src, SwitchID dest,
     assert(src >= 2 * m_nodes || dest >= 2 * m_nodes);
 
     std::pair<int, int> src_dest;
+    std::pair<int, int> dest_src;
     LinkEntry link_entry;
-
+    LinkEntry link_entry_dor_reverse;
+    int escapevc_dor_src = -1;
+    int escapevc_dor_dest = -1;
+    
     if (src < m_nodes) {
         src_dest.first = src;
         src_dest.second = dest;
         link_entry = m_link_map[src_dest];
         net->makeExtInLink(src, dest - (2 * m_nodes), link_entry.link,
-                        routing_table_entry);
+                           routing_table_entry);
     } else if (dest < 2*m_nodes) {
         assert(dest >= m_nodes);
         NodeID node = dest - m_nodes;
@@ -203,18 +209,44 @@ Topology::makeLink(Network *net, SwitchID src, SwitchID dest,
         src_dest.second = dest;
         link_entry = m_link_map[src_dest];
         net->makeExtOutLink(src - (2 * m_nodes), node, link_entry.link,
-                         routing_table_entry);
+                            routing_table_entry);
     } else {
         assert((src >= 2 * m_nodes) && (dest >= 2 * m_nodes));
         src_dest.first = src;
         src_dest.second = dest;
         link_entry = m_link_map[src_dest];
+
+        // Propagate escape VC DOR values.
+        // Test if reverse link_entry for an escape VC DOR exists
+        dest_src.first = dest;
+        dest_src.second = src;
+        link_entry_dor_reverse = m_link_map[dest_src];
+
+        if (link_entry_dor_reverse.escapevc_dor > -1) {
+            printf("dor_reverse_exists=true=%d\n", link_entry_dor_reverse.escapevc_dor);
+            // This link is the reverse of an existing link
+            // => src and dest are swapped => src gets higher DOR value
+            // Escape VC transfers over this links are prohibited, but
+            // the escapevc_dor values are still propagated for routing info
+            escapevc_dor_src = link_entry_dor_reverse.escapevc_dor + 1;
+            escapevc_dor_dest = link_entry_dor_reverse.escapevc_dor;
+        }
+        else {
+            printf("dor_reverse_exists=false=%d\n", link_entry_dor_reverse.escapevc_dor);
+            
+            escapevc_dor_src = link_entry.escapevc_dor;
+            if (escapevc_dor_src > -1) {
+                // dest gets higher DOR value
+                escapevc_dor_dest = link_entry.escapevc_dor + 1;
+            }
+        }
         net->makeInternalLink(src - (2 * m_nodes), dest - (2 * m_nodes),
                               link_entry.link,
                               routing_table_entry,
                               link_entry.src_outport_dirn,
                               link_entry.dst_inport_dirn,
-                              link_entry.escapevc_dor);
+                              escapevc_dor_src,
+                              escapevc_dor_dest);
     }
 }
 

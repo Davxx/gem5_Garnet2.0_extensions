@@ -175,8 +175,7 @@ GarnetNetwork::makeExtInLink(NodeID src, SwitchID dest, BasicLink* link,
     m_creditlinks.push_back(credit_link);
 
     PortDirection dst_inport_dirn = "Local";
-    m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link, -1,
-                               true);
+    m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link, -1);
     m_nis[src]->addOutPort(net_link, credit_link, dest);
 }
 
@@ -207,7 +206,7 @@ GarnetNetwork::makeExtOutLink(SwitchID src, NodeID dest, BasicLink* link,
     PortDirection src_outport_dirn = "Local";
     m_routers[src]->addOutPort(src_outport_dirn, net_link,
                                routing_table_entry,
-                               link->m_weight, credit_link, -1, true);
+                               link->m_weight, credit_link, -1);
     m_nis[dest]->addInPort(net_link, credit_link);
 }
 
@@ -221,29 +220,28 @@ GarnetNetwork::makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
                                 const NetDest& routing_table_entry,
                                 PortDirection src_outport_dirn,
                                 PortDirection dst_inport_dirn,
-                                int escapevc_dor)
+                                int escapevc_dor_src, int escapevc_dor_dest)
 {
-    bool obeys_dor_dirn = false;
+    // GarnetIntLink is unidirectional    
     GarnetIntLink* garnet_link = safe_cast<GarnetIntLink*>(link);
-
-    // GarnetIntLink is unidirectional
     NetworkLink* net_link = garnet_link->m_network_link;
     net_link->setType(INT_);
+    net_link->setEscapeVcDor(escapevc_dor_dest);
     CreditLink* credit_link = garnet_link->m_credit_link;
 
     m_networklinks.push_back(net_link);
     m_creditlinks.push_back(credit_link);
-      
-    // East-first Dimension Order Routing
-    if ((src_outport_dirn == "East" && dst_inport_dirn == "West") ||
-        (src_outport_dirn == "North" && dst_inport_dirn == "South"))
-        obeys_dor_dirn = true;
+
+    std::cout << "dor for router " << int(src);
+    std::cout << ": " << escapevc_dor_src;
+    std::cout << ", dor for router " << int(dest);
+    std::cout << ": " << escapevc_dor_dest;
+    printf("\n");
 
     m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link,
-                               escapevc_dor, !obeys_dor_dirn);
+                               escapevc_dor_dest);
     m_routers[src]->addOutPort(src_outport_dirn, net_link, routing_table_entry,
-                               link->m_weight, credit_link, escapevc_dor,
-                               obeys_dor_dirn);
+                               link->m_weight, credit_link, escapevc_dor_src);
 }
 
 // Total routers in the network

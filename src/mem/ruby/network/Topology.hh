@@ -59,7 +59,7 @@ struct LinkEntry
     BasicLink *link;
     PortDirection src_outport_dirn;
     PortDirection dst_inport_dirn;
-    int escapevc_dor;
+    int escapevc_dor = -2;
 };
 
 typedef std::map<std::pair<SwitchID, SwitchID>, LinkEntry> LinkMap;

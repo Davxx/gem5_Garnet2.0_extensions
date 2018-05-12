@@ -108,11 +108,10 @@ Router::wakeup()
     m_switch->wakeup();
 }
 
-
 void
 Router::addInPort(PortDirection inport_dirn,
                   NetworkLink *in_link, CreditLink *credit_link,
-                  int escapevc_dor, bool obeys_dor_dirn)
+                  int escapevc_dor)
 {
     int port_num = m_input_unit.size();
     InputUnit *input_unit = new InputUnit(port_num, inport_dirn, this);
@@ -126,15 +125,14 @@ Router::addInPort(PortDirection inport_dirn,
 
     printf("router %d: ", m_id);
     m_routing_unit->addInDirection(inport_dirn, port_num);
-    m_routing_unit->addInEscapeVcDor(escapevc_dor, port_num, obeys_dor_dirn);
+    m_routing_unit->addInEscapeVcDor(escapevc_dor, port_num);
 }
 
 void
 Router::addOutPort(PortDirection outport_dirn,
                    NetworkLink *out_link,
                    const NetDest& routing_table_entry, int link_weight,
-                   CreditLink *credit_link, int escapevc_dor,
-                   bool obeys_dor_dirn)
+                   CreditLink *credit_link, int escapevc_dor)
 {
     int port_num = m_output_unit.size();
     OutputUnit *output_unit = new OutputUnit(port_num, outport_dirn, this);
@@ -150,7 +148,7 @@ Router::addOutPort(PortDirection outport_dirn,
     m_routing_unit->addRoute(routing_table_entry);
     m_routing_unit->addWeight(link_weight);
     m_routing_unit->addOutDirection(outport_dirn, port_num);
-    m_routing_unit->addOutEscapeVcDor(escapevc_dor, port_num, obeys_dor_dirn);
+    m_routing_unit->addOutEscapeVcDor(escapevc_dor, port_num);
 }
 
 PortDirection
@@ -163,6 +161,19 @@ PortDirection
 Router::getInportDirection(int inport)
 {
     return m_input_unit[inport]->get_direction();
+}
+
+PortDirection
+Router::invertPortDirection(PortDirection dir) {
+    if (dir == "West")
+        return "East";
+    if (dir == "East")
+        return "West";
+    if (dir == "North")
+        return "South";
+    if (dir == "South")
+        return "North";
+    return "Local";
 }
 
 int

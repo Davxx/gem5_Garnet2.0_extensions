@@ -61,11 +61,10 @@ class RoutingUnit
     // Topology-specific direction based routing
     void addInDirection(PortDirection inport_dirn, int inport);
     void addOutDirection(PortDirection outport_dirn, int outport);
-    void addInEscapeVcDor(int dor, int port, bool obeys_dor_dirn);
-    void addOutEscapeVcDor(int dor, int port, bool obeys_dor_dirn);
+    void addInEscapeVcDor(int dor, int port);
+    void addOutEscapeVcDor(int dor, int port);
     int getInEscapeVcDor(int port);
     int getOutEscapeVcDor(int port);
-    int getEscapeVcDorOfPrevLink(int dor, int port, bool obeys_dor_dirn);
 
     // Routing for Mesh
     int outportComputeXY(RouteInfo route,

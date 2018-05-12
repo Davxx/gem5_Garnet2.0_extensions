@@ -67,7 +67,7 @@ class SimpleNetwork : public Network
                           const NetDest& routing_table_entry,
                           PortDirection src_outport,
                           PortDirection dst_inport,
-                          int escapevc_dor);
+                          int escapevc_dor_src, int escapevc_dor_dest);
 
     void print(std::ostream& out) const;
 

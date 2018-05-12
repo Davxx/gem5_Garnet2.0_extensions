@@ -41,6 +41,7 @@
 #include "Router.hh"
 #include "mem/ruby/network/garnet2.0/RoutingUnit.hh"
 #include "RoutingUnit.hh"
+#include "OutputUnit.hh"
 
 SwitchAllocator::SwitchAllocator(Router *router)
     : Consumer(router)
@@ -292,12 +293,13 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
     // Check if credit needed (for multi-flit packet)
     // Check if ordering violated (in ordered vnet)
 
-    PortDirection src_dirn = m_input_unit[inport]->get_direction();
-    PortDirection dest_dirn = m_input_unit[outport]->get_direction();
+    int in_dor, in_dor2, out_dor;
+    NetworkLink *outlink = m_output_unit[outport]->get_outLink_Ref();
+    PortDirection inport_dirn = m_input_unit[inport]->get_direction();
+    PortDirection outport_dirn = m_input_unit[outport]->get_direction();
 
-    int vnet = get_vnet(invc);
     int router_id = m_router->get_id();
-
+    int vnet = get_vnet(invc);
     bool has_credit = false;
 
     if (outvc == -1) {
@@ -314,52 +316,70 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
         has_credit = m_output_unit[outport]->has_credit(outvc);
     }
 
-    int in_dor = m_routing_unit->getInEscapeVcDor(inport);
-    int out_dor = m_routing_unit->getOutEscapeVcDor(outport);
-    printf("in_dor=%d, out_dor=%d\n", in_dor, out_dor);
-    
-    printf("router id: %d, inport: %d=", router_id, inport);
-    std::cout << m_router->getPortDirectionName(src_dirn);
-
-    printf(", invc: %d, outport: %d=", invc, outport);
-    std::cout << m_router->getPortDirectionName(dest_dirn);
-    
-    printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
-    
     // cannot send if no outvc or no credit.
     if (outvc == -1 || !has_credit) {
         printf("denied: outvc=%d, has_credit=%d\n", outvc, (int)has_credit);
         return false;
     }
 
+    // Disallow local VC transfers, i.e.: router_x.vc_i to router_x_vc_j | i!=j,
+    // since this will induce deadlocks
+    if ((inport_dirn == "Local") && outvc != invc)
+        return false;
+
+    /*if (invc == 0 && outvc != 0 && outport_dirn != "Local") {
+        printf("packet not allowed to leave vc\n");
+        return false;
+    }*/
+
     // Escape VC deadlock avoidance for Ring topology.
     // VC=0 is acyclic escape VC; other VC's can be cyclic.
-    if (invc == 0 && outvc == 0) {
+    // Local transfers within the escape VC are always allowed.
+    /*if (invc == 0 && outvc == 0 && outport_dirn != "Local") {
+
+        // Get the escape VC DOR value of the outport link
+        out_dor = outlink->getEscapeVcDor();
+        
+        // If inport or outport direction is `Local`, their DOR value will
+        // return -1. Therefore, get the previous link's DOR value from
+        // the highest value of the inport and outport at the sender.
+        in_dor = m_routing_unit->getInEscapeVcDor(inport);
+        in_dor2 = m_routing_unit->getOutEscapeVcDor(outport);
+        in_dor = std::max(in_dor, in_dor2);
+
+        printf("in_dor=%d, out_dor=%d\n", in_dor, out_dor);
+        printf("router id: %d, inport: %d=", router_id, inport);
+        std::cout << m_router->getPortDirectionName(inport_dirn);
+        printf(", invc: %d, outport: %d=", invc, outport);
+        std::cout << m_router->getPortDirectionName(outport_dirn);
+        printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
+
+        // Disallow sending to a node with a lower DOR value or
+        // a non-Local node with a DOR value of -1
+        if (in_dor > out_dor || out_dor == -1) {
+            printf("denied escape VC path\n");
+            return false;
+        }
+    }*/
+    /*if (invc == 0 && outvc == 0) {
         // Disallow traffic between the first and last nodes on the ring
-        if ((router_id == 15 && dest_dirn == "South") ||
-            (router_id == 0 && dest_dirn == "North")) {
-            printf("skipping router %d dest_dirn=", router_id);
-            std::cout << dest_dirn << "\n";
+        if ((router_id == 15 && outport_dirn == "South") ||
+            (router_id == 0 && outport_dirn == "North")) {
+            printf("skipping router %d outport_dirn=", router_id);
+            std::cout << outport_dirn << "\n";
             return false;
         }
         // Restrict traffic direction on the escape VC to counter-clockwise
         // (East-first)
-        if ((router_id >= 0 && router_id <= 7 && dest_dirn == "West") ||
-            (router_id == 8 && dest_dirn == "South") ||
-            (router_id >= 8 && router_id <= 15 && dest_dirn == "East")) {
-            printf("skipping router %d dest_dirn=", router_id);
-            std::cout << dest_dirn << "\n";
+        if ((router_id >= 0 && router_id <= 7 && outport_dirn == "West") ||
+            (router_id == 8 && outport_dirn == "South") ||
+            (router_id >= 8 && router_id <= 15 && outport_dirn == "East")) {
+            printf("skipping router %d outport_dirn=", router_id);
+            std::cout << outport_dirn << "\n";
             return false;
         }
-    }
-    // Disallow local VC transfers, i.e. router_x.vc_i to router_x_vc_j | i!=j
-    if (src_dirn == "Local" && outvc != invc)
-        return false;
-    /*if (invc == 0 && outvc != 0) {
-        printf("packet not allowed to leave vc\n");
-        return false;
     }*/
-    
+
     // protocol ordering check
     if ((m_router->get_net_ptr())->isVNetOrdered(vnet)) {
 
