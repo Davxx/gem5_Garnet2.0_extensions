@@ -37,6 +37,7 @@
 #include "debug/RubyNetwork.hh"
 #include "mem/ruby/network/garnet2.0/Credit.hh"
 #include "mem/ruby/network/garnet2.0/Router.hh"
+#include "NetworkLink.hh"
 
 using namespace std;
 using m5::stl_helpers::deletePointers;
@@ -92,15 +93,57 @@ OutputUnit::has_credit(int out_vc)
     return m_outvc_state[out_vc]->has_credit();
 }
 
+// TODO
+bool
+OutputUnit::escapevc_allowed(RouteInfo route)
+{
+    NetworkLink *outlink = get_outLink_Ref();
+    int my_dor = outlink->getEscapeVcDor();
+    int dest_dor = route.dest_dor;
+    int my_id = m_router->get_id();
+    int dest_id = route.dest_router;
+
+    std::cout << "m_direction=" << m_direction;
+    printf(", my_id=%d, dest_id=%d\n", my_id, dest_id);
+    printf(", router_dor=%d, dest_dor=%d\n", my_dor, dest_dor);
+    //if ()
+
+    /*if (m_direction == "East") {
+        if ((my_id >= 8 && my_id <= 15 && dest_id > my_id) ||
+            (my_id >= 0 && my_id <= 7 && dest_id < my_id)) {
+            // heads SW
+            printf("denied SW-headed entry to escape VC path\n");
+            return false;
+        }
+    }*/
+    if (m_direction == "West") {
+        if ((my_id >= 0 && my_id <= 7 && dest_id > my_id) ||
+            (my_id >= 8 && my_id <= 15 && dest_id < my_id)) {
+            // heads SW
+            printf("denied SW-headed entry to escape VC path\n");
+            return false;
+        }
+    }
+    if (m_direction == "South") {
+        if (my_id == 8) {
+            // heads SW
+            printf("denied SW*-headed entry to escape VC path\n");
+            return false;
+        }
+    }
+    return true;
+}
 
 // Return highest free VC at the output port (i.e., input port at next router)
 int
-OutputUnit::free_vc(int vnet)
+OutputUnit::free_vc(int vnet, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
     for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
-        if (is_vc_idle(vc, m_router->curCycle()))
-            return vc;
+        if (is_vc_idle(vc, m_router->curCycle())) {
+            if (vc != 0 || (vc == 0 && escapevc_allowed(route)))
+                return vc;
+        }
     }
 
     return -1;
@@ -108,13 +151,16 @@ OutputUnit::free_vc(int vnet)
 
 // Assign a free output VC to the winner of Switch Allocation
 int
-OutputUnit::select_free_vc(int vnet)
+OutputUnit::select_free_vc(int vnet, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
     for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
         if (is_vc_idle(vc, m_router->curCycle())) {
-            m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
-            return vc;
+            if (vc != 0 || (vc == 0 && escapevc_allowed(route))) {
+                printf("allowed on vc=%d\n", vc);
+                m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
+                return vc;
+            }
         }
     }
 

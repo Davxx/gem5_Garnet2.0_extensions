@@ -216,18 +216,18 @@ Topology::makeLink(Network *net, SwitchID src, SwitchID dest,
         src_dest.second = dest;
         link_entry = m_link_map[src_dest];
 
-        // Propagate escape VC DOR values.
-        // Test if reverse link_entry for an escape VC DOR exists
+        // Propagate escape VC DOR values
         dest_src.first = dest;
         dest_src.second = src;
         link_entry_dor_reverse = m_link_map[dest_src];
 
+        // Test if reverse link_entry for an escape VC DOR exists
         if (link_entry_dor_reverse.escapevc_dor > -1) {
             printf("dor_reverse_exists=true=%d\n", link_entry_dor_reverse.escapevc_dor);
             // This link is the reverse of an existing link
             // => src and dest are swapped => src gets higher DOR value
             // Escape VC transfers over this links are prohibited, but
-            // the escapevc_dor values are still propagated for routing info
+            // the escapevc_dor values are still propagated for routing info TODO
             escapevc_dor_src = link_entry_dor_reverse.escapevc_dor + 1;
             escapevc_dor_dest = link_entry_dor_reverse.escapevc_dor;
         }

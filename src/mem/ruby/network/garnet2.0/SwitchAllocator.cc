@@ -116,12 +116,12 @@ SwitchAllocator::wakeup()
 void
 SwitchAllocator::arbitrate_inports()
 {
-    // Select a VC from each input in a reverse round robin manner
+    // Select a VC from each input in a round robin manner
     // Independent arbiter at each input port
-    for (int inport = m_num_inports - 1; inport >= 0; inport--) {
+    for (int inport = 0; inport < m_num_inports; inport++) {
         int invc = m_round_robin_invc[inport];
 
-        for (int invc_iter = m_num_vcs - 1; invc_iter >= 0; invc_iter--) {
+        for (int invc_iter = 0; invc_iter < m_num_vcs; invc_iter++) {
 
             if (m_input_unit[inport]->need_stage(invc, SA_,
                 m_router->curCycle())) {
@@ -151,9 +151,9 @@ SwitchAllocator::arbitrate_inports()
                 }
             }
 
-            invc--;
-            if (invc < 0)
-                invc = m_num_vcs - 1;
+            invc++;
+            if (invc >= m_num_vcs)
+                invc = 0;
         }
     }
 }
@@ -176,13 +176,13 @@ void
 SwitchAllocator::arbitrate_outports()
 {
     // Now there are a set of input vc requests for output vcs.
-    // Again do reverse round robin arbitration on these requests
+    // Again do round robin arbitration on these requests
     // Independent arbiter at each output port
-    for (int outport = m_num_outports - 1; outport >= 0; outport--) {
+    for (int outport = 0; outport < m_num_outports; outport++) {
         int inport = m_round_robin_inport[outport];
 
-        for (int inport_iter = m_num_inports - 1; inport_iter >= 0;
-             inport_iter--) {
+        for (int inport_iter = 0; inport_iter < m_num_inports;
+                 inport_iter++) {
 
             // inport has a request this cycle for outport
             if (m_port_requests[outport][inport]) {
@@ -265,9 +265,9 @@ SwitchAllocator::arbitrate_outports()
                 break; // got a input winner for this outport
             }
 
-            inport--;
-            if (inport < 0)
-                inport = m_num_inports - 1;
+            inport++;
+            if (inport >= m_num_inports)
+                inport = 0;
         }
     }
 }
@@ -287,25 +287,38 @@ SwitchAllocator::arbitrate_outports()
  */
 
 bool
-SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
+SwitchAllocator::send_allowed(int inport, int invc, int outport,
+                              int suggested_outvc)
 {
     // Check if outvc needed
     // Check if credit needed (for multi-flit packet)
     // Check if ordering violated (in ordered vnet)
 
     int in_dor, in_dor2, out_dor;
+    int outvc = suggested_outvc;
+    flit *flit = m_input_unit[inport]->peekTopFlit(invc);
+    RouteInfo route = flit->get_route();
+    int nhops = route.hops_traversed;
     NetworkLink *outlink = m_output_unit[outport]->get_outLink_Ref();
     PortDirection inport_dirn = m_input_unit[inport]->get_direction();
     PortDirection outport_dirn = m_input_unit[outport]->get_direction();
+    PortDirection out_outport_dirn = m_output_unit[outport]->get_direction();
 
     int router_id = m_router->get_id();
     int vnet = get_vnet(invc);
     bool has_credit = false;
 
+    printf("flit p: %p, router id: %d, inport: %d=", flit, router_id, inport);
+    std::cout << m_router->getPortDirectionName(inport_dirn);
+    printf(", invc: %d, outport: %d=", invc, outport);
+    std::cout << m_router->getPortDirectionName(outport_dirn);
+    std::cout << ", out_outport_dirn=" << out_outport_dirn;
+    printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
+    
     if (outvc == -1) {
         // needs outvc
         // this is only true for HEAD and HEAD_TAIL flits.
-        outvc = m_output_unit[outport]->free_vc(vnet);
+        outvc = m_output_unit[outport]->free_vc(vnet, route);
 
         if (outvc != -1) {
             // each VC has at least one buffer,
@@ -321,64 +334,45 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
         printf("denied: outvc=%d, has_credit=%d\n", outvc, (int)has_credit);
         return false;
     }
+    
+    // Get the escape VC DOR value of the outport link
+    out_dor = outlink->getEscapeVcDor();
 
-    // Disallow local VC transfers, i.e.: router_x.vc_i to router_x_vc_j | i!=j,
-    // since this will induce deadlocks
-    if ((inport_dirn == "Local") && outvc != invc)
-        return false;
+    // If inport or outport direction is `Local`, their DOR value will
+    // return -1. Therefore, get the previous link's DOR value from
+    // the highest value of the inport and outport at the sender.
+    in_dor = m_routing_unit->getInEscapeVcDor(inport);
+    in_dor2 = m_routing_unit->getOutEscapeVcDor(outport);
+    in_dor = std::max(in_dor, in_dor2);
 
-    /*if (invc == 0 && outvc != 0 && outport_dirn != "Local") {
+    printf("in_dor=%d, out_dor=%d\n", in_dor, out_dor);
+
+    printf("flit p: %p, hops: %d, src_router=%d, dest_router=%d, src_dor=%d, dest_dor=%d\n", flit, flit->get_hops(),
+           route.src_router, route.dest_router, route.src_dor, route.dest_dor);
+
+    /*if (invc == 0 && outvc != 0 && nhops > 0) {
         printf("packet not allowed to leave vc\n");
         return false;
     }*/
-
-    // Escape VC deadlock avoidance for Ring topology.
-    // VC=0 is acyclic escape VC; other VC's can be cyclic.
-    // Local transfers within the escape VC are always allowed.
-    /*if (invc == 0 && outvc == 0 && outport_dirn != "Local") {
-
-        // Get the escape VC DOR value of the outport link
-        out_dor = outlink->getEscapeVcDor();
-        
-        // If inport or outport direction is `Local`, their DOR value will
-        // return -1. Therefore, get the previous link's DOR value from
-        // the highest value of the inport and outport at the sender.
-        in_dor = m_routing_unit->getInEscapeVcDor(inport);
-        in_dor2 = m_routing_unit->getOutEscapeVcDor(outport);
-        in_dor = std::max(in_dor, in_dor2);
-
-        printf("in_dor=%d, out_dor=%d\n", in_dor, out_dor);
-        printf("router id: %d, inport: %d=", router_id, inport);
-        std::cout << m_router->getPortDirectionName(inport_dirn);
-        printf(", invc: %d, outport: %d=", invc, outport);
-        std::cout << m_router->getPortDirectionName(outport_dirn);
-        printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
-
-        // Disallow sending to a node with a lower DOR value or
-        // a non-Local node with a DOR value of -1
-        if (in_dor > out_dor || out_dor == -1) {
-            printf("denied escape VC path\n");
-            return false;
-        }
-    }*/
     /*if (invc == 0 && outvc == 0) {
-        // Disallow traffic between the first and last nodes on the ring
-        if ((router_id == 15 && outport_dirn == "South") ||
-            (router_id == 0 && outport_dirn == "North")) {
-            printf("skipping router %d outport_dirn=", router_id);
-            std::cout << outport_dirn << "\n";
+        if (outport_dirn == "East" && router_id >= 8 && route.dest_router <= 7) {
+            printf("East packet not allowed to enter vc\n");
             return false;
         }
-        // Restrict traffic direction on the escape VC to counter-clockwise
-        // (East-first)
-        if ((router_id >= 0 && router_id <= 7 && outport_dirn == "West") ||
-            (router_id == 8 && outport_dirn == "South") ||
-            (router_id >= 8 && router_id <= 15 && outport_dirn == "East")) {
-            printf("skipping router %d outport_dirn=", router_id);
-            std::cout << outport_dirn << "\n";
+        if (outport_dirn == "East" && router_id <= 7 && route.dest_router >= 8) {
+            printf("East* packet not allowed to enter vc\n");
             return false;
         }
     }*/
+
+    // Prohibit local VC transfers, i.e.: router_x.vc_i to router_x_vc_j | i!=j,
+    // since this will induce deadlocks
+    if (inport_dirn == "Local" && invc != outvc) {
+        printf("Local not allowed\n");
+        return false;
+    }
+
+    printf("allowed on outvc=%d\n", outvc);
 
     // protocol ordering check
     if ((m_router->get_net_ptr())->isVNetOrdered(vnet)) {
@@ -408,8 +402,13 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport, int outvc)
 int
 SwitchAllocator::vc_allocate(int outport, int inport, int invc)
 {
+    flit *flit = m_input_unit[inport]->peekTopFlit(invc);
+    RouteInfo route = flit->get_route();
+    printf("allocate flit p: %p, hops: %d, src_router=%d, dest_router=%d, src_dor=%d, dest_dor=%d\n", flit, flit->get_hops(),
+       route.src_router, route.dest_router, route.src_dor, route.dest_dor);
+
     // Select a free VC from the output port
-    int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc));
+    int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), route);
 
     // has to get a valid VC since it checked before performing SA
     assert(outvc != -1);

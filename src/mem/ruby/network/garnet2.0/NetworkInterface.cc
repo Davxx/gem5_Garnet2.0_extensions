@@ -68,7 +68,7 @@ NetworkInterface::NetworkInterface(const Params *p)
 
     m_vc_allocator.resize(m_virtual_networks); // 1 allocator per vnet
     for (int i = 0; i < m_virtual_networks; i++) {
-        m_vc_allocator[i] = 0;
+        m_vc_allocator[i] = 1;
     }
 
     m_stall_count.resize(m_virtual_networks);
@@ -378,8 +378,10 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         route.net_dest = new_net_msg_ptr->getDestination();
         route.src_ni = m_id;
         route.src_router = m_router_id;
+        route.src_dor = route.src_router + 1;
         route.dest_ni = destID;
         route.dest_router = m_net_ptr->get_router_id(destID);
+        route.dest_dor = route.dest_router + 1;
 
         // initialize hops_traversed to -1
         // so that the first router increments it to 0

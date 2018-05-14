@@ -75,16 +75,16 @@ RoutingUnit::lookupRoutingTable(RouteInfo route)
     // For unordered vnet, randomly choose any of the links
     // To have a strict ordering between links, they should be given
     // different weights in the topology file
-    int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
-    int num_cols = m_router->get_net_ptr()->getNumCols();
+    int M5_VAR_USED nrows = m_router->get_net_ptr()->getNumRows();
+    int ncols = m_router->get_net_ptr()->getNumCols();
     
     int my_id = m_router->get_id();
-    int my_x = my_id % num_cols;
-    int my_y = my_id / num_cols;
+    int my_x = my_id % ncols;
+    int my_y = my_id / ncols;
 
     int dest_id = route.dest_router;
-    int dest_x = dest_id % num_cols;
-    int dest_y = dest_id / num_cols;
+    int dest_x = dest_id % ncols;
+    int dest_y = dest_id / ncols;
     
     int vnet = route.vnet;
     NetDest msg_destination = route.net_dest;
@@ -228,17 +228,17 @@ RoutingUnit::outportComputeXY(RouteInfo route,
 {
     PortDirection outport_dirn = "Unknown";
 
-    int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
-    int num_cols = m_router->get_net_ptr()->getNumCols();
-    assert(num_rows > 0 && num_cols > 0);
+    int M5_VAR_USED nrows = m_router->get_net_ptr()->getNumRows();
+    int ncols = m_router->get_net_ptr()->getNumCols();
+    assert(nrows > 0 && ncols > 0);
 
     int my_id = m_router->get_id();
-    int my_x = my_id % num_cols;
-    int my_y = my_id / num_cols;
+    int my_x = my_id % ncols;
+    int my_y = my_id / ncols;
 
     int dest_id = route.dest_router;
-    int dest_x = dest_id % num_cols;
-    int dest_y = dest_id / num_cols;
+    int dest_x = dest_id % ncols;
+    int dest_y = dest_id / ncols;
 
     int x_hops = abs(dest_x - my_x);
     int y_hops = abs(dest_y - my_y);
@@ -283,17 +283,17 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
                                   int inport,
                                   PortDirection inport_dirn)
 {
-    int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
-    int num_cols = m_router->get_net_ptr()->getNumCols();
-    assert(num_rows > 0 && num_cols > 0);
+    int M5_VAR_USED nrows = m_router->get_net_ptr()->getNumRows();
+    int ncols = m_router->get_net_ptr()->getNumCols();
+    assert(nrows > 0 && ncols > 0);
     
     int my_id = m_router->get_id();
-    int my_x = my_id % num_cols;
-    int my_y = my_id / num_cols;
+    int my_x = my_id % ncols;
+    int my_y = my_id / ncols;
 
     int dest_id = route.dest_router;
-    int dest_x = dest_id % num_cols;
-    int dest_y = dest_id / num_cols;
+    int dest_x = dest_id % ncols;
+    int dest_y = dest_id / ncols;
 
     bool x_dirn = (dest_x >= my_x);
     bool y_dirn = (dest_y >= my_y);
@@ -341,61 +341,57 @@ RoutingUnit::outportComputeAdaptive(RouteInfo route,
                                     int inport,
                                     PortDirection inport_dirn)
 {
-    int M5_VAR_USED num_rows = m_router->get_net_ptr()->getNumRows();
-    int num_cols = m_router->get_net_ptr()->getNumCols();
-    assert(num_rows > 0 && num_cols > 0);
-
+    int M5_VAR_USED nrows = m_router->get_net_ptr()->getNumRows();
+    int ncols = m_router->get_net_ptr()->getNumCols();
+    
     int my_id = m_router->get_id();
-    int my_x = my_id % num_cols;
-    int my_y = my_id / num_cols;
+    int my_x = my_id % ncols;
+    int my_y = my_id / ncols;
 
     int dest_id = route.dest_router;
-    int dest_x = dest_id % num_cols;
-    int dest_y = dest_id / num_cols;
+    int dest_x = dest_id % ncols;
+    int dest_y = dest_id / ncols;
 
-    int x_hops = abs(dest_x - my_x);
-    int y_hops = abs(dest_y - my_y);
+    int vnet = route.vnet;
+    NetDest msg_destination = route.net_dest;
+    
+    int min_weight = INFINITE_;
+    std::vector<int> output_link_candidates;
+    int ncandidates = 0;
+    int minimal_route_link = -1;
 
-    bool x_dirn = (dest_x >= my_x);
-    bool y_dirn = (dest_y >= my_y);
-
-    PortDirection directions[4] = {"West", "East", "North", "South"};
-    PortDirection randdir = "Unknown";
-    int randn = 0;
-
-    // already checked that in outportCompute() function
-    assert(!(x_hops == 0 && y_hops == 0));
-
-    if (x_hops && y_hops) {
-        // Choose whether to go in X- or Y-direction
-        
-        randn = rand() % 2;
-        x_hops = randn;
-        y_hops = 1 - randn;
+    // Collect one minimally routed output link
+    for (int link = 0; link < m_routing_table.size(); link++) {
+        if (msg_destination.intersectionIsNotEmpty(m_routing_table[link])) {
+            minimal_route_link = link;
+            break;
+        }
     }
-    if (x_hops) {
-        if (x_dirn)
-            // Move East
-            randn = 1;
-        else
-            // Move West
-            randn = 0;
+   // Collect all non-minimally routed candidate output links
+    for (int link = 0; link < m_routing_table.size(); link++) {
+        PortDirection portdir = m_outports_idx2dirn[link];
+        std::cout << "to: " << portdir;
+        if (link == minimal_route_link) {
+            std::cout << " = minimal";
+        }
+        else if (portdir != "Local") { // TODO
+            std::cout << " = possible";
+        }
+        ncandidates++;
+        output_link_candidates.push_back(link);
+        std::cout << "\n";
     }
-    else if (y_hops) {
-        if (y_dirn)
-            // Move North
-            randn = 2;
-        else
-            // Move South
-            randn = 3;
+    if (output_link_candidates.size() == 0) {
+        fatal("Fatal Error:: No Route exists from this Router.");
+        exit(0);
     }
-    randdir = directions[randn];
 
-    printf("destx=%d, desty=%d, my_x: %d, my_y: %d\n", dest_x, dest_y, my_x, my_y);
-    fflush(stdout);
-    /*std::cout << "moving from " << inport_dirn;
-    std::cout << " to " << randdir;
-    std::cout << "\n\n";*/
-
-    return m_outports_dirn2idx[randdir];
+    // If no minimal link, randomly select any candidate output link
+    int candidate = minimal_route_link;
+    if (candidate == -1)
+        candidate = rand() % ncandidates;
+    
+    std::cout << "selected_dir=" << m_outports_idx2dirn[output_link_candidates.at(candidate)];
+    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n", ncandidates, my_id, dest_id);
+    return output_link_candidates.at(candidate);
 }

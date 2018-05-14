@@ -55,8 +55,10 @@ struct RouteInfo
     // src and dest format for topology-specific routing
     int src_ni;
     int src_router;
+    int src_dor = -1;
     int dest_ni;
     int dest_router;
+    int dest_dor = -1;
     int hops_traversed;
 };
 

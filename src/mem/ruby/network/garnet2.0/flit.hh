@@ -70,6 +70,7 @@ class flit
     void set_dequeue_time(Cycles time) { m_dequeue_time = time; }
 
     void increment_hops() { m_route.hops_traversed++; }
+    int get_hops() { return m_route.hops_traversed; }
     void print(std::ostream& out) const;
 
     bool

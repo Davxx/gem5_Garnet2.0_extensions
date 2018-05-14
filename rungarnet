@@ -33,10 +33,10 @@ INJVNET=0               # Only inject in this vnet (0, 1 or 2).
 NCPU=16
 NROWS=2
 TOPO=Ring
-IJRATE=0.2
+IJRATE=0.99
 ROUTINGALGO=0
 SYNTH=uniform_random
-NCYCLES=10000
+NCYCLES=5000
 
 # Send between specific router id's. -1: disable
 SENDER_ID=-1
@@ -46,7 +46,7 @@ if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
     NCPU=$1
 else
     # Print help info
-    sed -n "3,20p" r
+    sed -n "3,20p" rungarnet
     exit
 fi
 if [ "$#" -gt 1 ]; then
@@ -95,7 +95,8 @@ mkdir -p $OUTDIR
 
 # Redirect stdout
 if [ $GARNETDEBUG -eq 1 ]; then
-    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+#    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+    GARNETDEBUG_FLAGS=""
     GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
 else
     GARNETDEBUG_FLAGS=""
