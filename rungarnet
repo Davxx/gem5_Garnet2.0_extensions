@@ -21,12 +21,14 @@
 
 # Defaults:
 HIDEWARNERROR=0         # Bool: hide warnings and errors
+HIDESTDOUT=0            # Bool: hide stdout
 GARNETDEBUG=1           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
-NVCS=4                  # Number of virtual channels (VC) per virtual network
+NVCS=2                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per data VC
 LINKWIDTHBITS=32        # Width in bits for all links inside the network
-DEADLOCKTHRESHOLD=500   # Network-level deadlock threshold
+DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
+USE_ESCAPE_VC=1         # Bool: Use VC=0 as Escape VC. Requires NVCS>=2
 INJVNET=0               # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
@@ -93,10 +95,10 @@ if [ -d $OUTDIR ]; then
 fi
 mkdir -p $OUTDIR
 
-# Redirect stdout
+# Redirect stdout to file
 if [ $GARNETDEBUG -eq 1 ]; then
-#    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
-    GARNETDEBUG_FLAGS=""
+    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+#    GARNETDEBUG_FLAGS=""
     GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
 else
     GARNETDEBUG_FLAGS=""
@@ -104,7 +106,14 @@ else
     GARNETDEBUG_PIPE=""
 fi
 
-# Redirect stderr
+# Redirect stdout to /dev/null
+if [ $HIDESTDOUT -eq 1 ]; then
+    HIDESTDOUT="-r --stdout-file=/dev/null"
+else
+    HIDESTDOUT=""
+fi
+
+# Redirect stderr /dev/null
 if [ $HIDEWARNERROR -eq 1 ]; then
     HIDEWARNERROR="-e --stderr-file=/dev/null"
 else
@@ -119,10 +128,16 @@ if [ ! $DEST_ID -eq -1 ]; then
     SEND_TO_ROUTER_IDS+=" --single-dest-id=$DEST_ID"
 fi
 
+if [ $USE_ESCAPE_VC -eq 1 ]; then
+    USE_ESCAPE_VC="--escapevc"
+else
+    USE_ESCAPE_VC=""
+fi
+
 # Set environment variable for recognizing simulation type in gem5 .py-files
 export GEM5SIMTYPE=GarnetStandalone
 
-RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $GARNETDEBUG_FLAGS -d $OUTDIR configs/example/garnet_synth_traffic.py \
+RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPU \
 --num-dirs=$NCPU \
@@ -138,7 +153,7 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $GARNETDEBUG_FLAGS -d $OUTDIR 
 --buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
 --inj-vnet=$INJVNET \
---tikz $SEND_TO_ROUTER_IDS"
+--tikz $USE_ESCAPE_VC $SEND_TO_ROUTER_IDS"
 
 redirect_cmd() {
     if [ $GARNETDEBUG -eq 1 ]; then

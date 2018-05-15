@@ -57,7 +57,6 @@ class BasicIntLink(BasicLink):
     # only used by Garnet.
     src_outport = Param.String("", "Outport direction at src router")
     dst_inport = Param.String("", "Inport direction at dst router")
-    escapevc_dor = Param.Int(-1, "Dimension Order Routing for the escape VC")
 
     # only used by simple network
     bandwidth_factor = 16

@@ -94,7 +94,6 @@ Topology::Topology(uint32_t num_routers,
 
         PortDirection src_outport = int_link->params()->src_outport;
         PortDirection dst_inport = int_link->params()->dst_inport;
-        int escapevc_dor = int_link->params()->escapevc_dor;
 
         // Store the IntLink pointers for later
         m_int_link_vector.push_back(int_link);
@@ -103,7 +102,7 @@ Topology::Topology(uint32_t num_routers,
         int dst = router_dst->params()->router_id + 2*m_nodes;
 
         // create the internal uni-directional link from src to dst
-        addLink(src, dst, int_link, src_outport, dst_inport, escapevc_dor);
+        addLink(src, dst, int_link, src_outport, dst_inport);
     }
 }
 
@@ -163,8 +162,7 @@ Topology::createLinks(Network *net)
 void
 Topology::addLink(SwitchID src, SwitchID dest, BasicLink* link,
                   PortDirection src_outport_dirn,
-                  PortDirection dst_inport_dirn,
-                  int escapevc_dor)
+                  PortDirection dst_inport_dirn)
 {
     assert(src <= m_number_of_switches+m_nodes+m_nodes);
     assert(dest <= m_number_of_switches+m_nodes+m_nodes);
@@ -176,7 +174,6 @@ Topology::addLink(SwitchID src, SwitchID dest, BasicLink* link,
     src_dest_pair.second = dest;
     link_entry.link = link;
     link_entry.src_outport_dirn = src_outport_dirn;
-    link_entry.escapevc_dor = escapevc_dor;
     link_entry.dst_inport_dirn  = dst_inport_dirn;
     m_link_map[src_dest_pair] = link_entry;
 }
@@ -190,11 +187,7 @@ Topology::makeLink(Network *net, SwitchID src, SwitchID dest,
     assert(src >= 2 * m_nodes || dest >= 2 * m_nodes);
 
     std::pair<int, int> src_dest;
-    std::pair<int, int> dest_src;
     LinkEntry link_entry;
-    LinkEntry link_entry_dor_reverse;
-    int escapevc_dor_src = -1;
-    int escapevc_dor_dest = -1;
     
     if (src < m_nodes) {
         src_dest.first = src;
@@ -216,37 +209,11 @@ Topology::makeLink(Network *net, SwitchID src, SwitchID dest,
         src_dest.second = dest;
         link_entry = m_link_map[src_dest];
 
-        // Propagate escape VC DOR values
-        dest_src.first = dest;
-        dest_src.second = src;
-        link_entry_dor_reverse = m_link_map[dest_src];
-
-        // Test if reverse link_entry for an escape VC DOR exists
-        if (link_entry_dor_reverse.escapevc_dor > -1) {
-            printf("dor_reverse_exists=true=%d\n", link_entry_dor_reverse.escapevc_dor);
-            // This link is the reverse of an existing link
-            // => src and dest are swapped => src gets higher DOR value
-            // Escape VC transfers over this links are prohibited, but
-            // the escapevc_dor values are still propagated for routing info TODO
-            escapevc_dor_src = link_entry_dor_reverse.escapevc_dor + 1;
-            escapevc_dor_dest = link_entry_dor_reverse.escapevc_dor;
-        }
-        else {
-            printf("dor_reverse_exists=false=%d\n", link_entry_dor_reverse.escapevc_dor);
-            
-            escapevc_dor_src = link_entry.escapevc_dor;
-            if (escapevc_dor_src > -1) {
-                // dest gets higher DOR value
-                escapevc_dor_dest = link_entry.escapevc_dor + 1;
-            }
-        }
         net->makeInternalLink(src - (2 * m_nodes), dest - (2 * m_nodes),
                               link_entry.link,
                               routing_table_entry,
                               link_entry.src_outport_dirn,
-                              link_entry.dst_inport_dirn,
-                              escapevc_dor_src,
-                              escapevc_dor_dest);
+                              link_entry.dst_inport_dirn);
     }
 }
 

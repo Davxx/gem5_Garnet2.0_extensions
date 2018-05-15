@@ -37,19 +37,16 @@ class Ring(SimpleTopology):
                                       src_outport=src_outport,
                                       dst_inport=dst_inport,
                                       latency=self.link_latency,
-                                      weight=weight,
-                                      escapevc_dor=src_id))
+                                      weight=weight))
 
-        # dst->src link. escapevc_dor is computed in Topology.cc, based on
-        # src->dst link DOR values
+        # dst->src link
         self.int_links.append(IntLink(link_id=self.link_count + 1,
                                       src_node=self.routers[dst_id],
                                       dst_node=self.routers[src_id],
                                       src_outport=dst_inport,
                                       dst_inport=src_outport,
                                       latency=self.link_latency,
-                                      weight=weight,
-                                      escapevc_dor=-1))
+                                      weight=weight))
 
         thick_line = "line width=1mm" if weight == 1 else ""
         self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, thick_line, dst_id))
@@ -84,7 +81,7 @@ class Ring(SimpleTopology):
             self.tikz_out = TikzTopology(m5.options.outdir, nrows, ncols)
 
         # Create the routers on the ring
-        self.routers = [Router(router_id=i, latency = router_latency) for i in range(self.nrouters)]
+        self.routers = [Router(router_id=i, latency=router_latency, escapevc_dor=i) for i in range(self.nrouters)]
         network.routers = self.routers
 
         # Link counter to set unique link ids

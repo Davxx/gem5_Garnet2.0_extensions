@@ -54,6 +54,7 @@ Router::Router(const Params *p)
     m_virtual_networks = p->virt_nets;
     m_vc_per_vnet = p->vcs_per_vnet;
     m_num_vcs = m_virtual_networks * m_vc_per_vnet;
+    m_dor = p->escapevc_dor;
 
     m_routing_unit = new RoutingUnit(this);
     m_sw_alloc = new SwitchAllocator(this);
@@ -110,8 +111,7 @@ Router::wakeup()
 
 void
 Router::addInPort(PortDirection inport_dirn,
-                  NetworkLink *in_link, CreditLink *credit_link,
-                  int escapevc_dor)
+                  NetworkLink *in_link, CreditLink *credit_link)
 {
     int port_num = m_input_unit.size();
     InputUnit *input_unit = new InputUnit(port_num, inport_dirn, this);
@@ -123,16 +123,14 @@ Router::addInPort(PortDirection inport_dirn,
 
     m_input_unit.push_back(input_unit);
 
-    printf("router %d: ", m_id);
     m_routing_unit->addInDirection(inport_dirn, port_num);
-    m_routing_unit->addInEscapeVcDor(escapevc_dor, port_num);
 }
 
 void
 Router::addOutPort(PortDirection outport_dirn,
                    NetworkLink *out_link,
                    const NetDest& routing_table_entry, int link_weight,
-                   CreditLink *credit_link, int escapevc_dor)
+                   CreditLink *credit_link)
 {
     int port_num = m_output_unit.size();
     OutputUnit *output_unit = new OutputUnit(port_num, outport_dirn, this);
@@ -144,11 +142,9 @@ Router::addOutPort(PortDirection outport_dirn,
 
     m_output_unit.push_back(output_unit);
 
-    printf("router %d: ", m_id);
     m_routing_unit->addRoute(routing_table_entry);
     m_routing_unit->addWeight(link_weight);
     m_routing_unit->addOutDirection(outport_dirn, port_num);
-    m_routing_unit->addOutEscapeVcDor(escapevc_dor, port_num);
 }
 
 PortDirection

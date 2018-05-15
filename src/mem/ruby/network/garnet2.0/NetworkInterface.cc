@@ -344,7 +344,8 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         int vc = calculateVC(vnet);
 
         if (vc == -1) {
-            return false ;
+            printf("no free outvcs\n");
+            return false;
         }
         MsgPtr new_msg_ptr = msg_ptr->clone();
         NodeID destID = dest_nodes[ctr];
@@ -378,10 +379,9 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         route.net_dest = new_net_msg_ptr->getDestination();
         route.src_ni = m_id;
         route.src_router = m_router_id;
-        route.src_dor = route.src_router + 1;
         route.dest_ni = destID;
         route.dest_router = m_net_ptr->get_router_id(destID);
-        route.dest_dor = route.dest_router + 1;
+        route.dest_dor = m_net_ptr->get_dor_for_router(route.dest_router);
 
         // initialize hops_traversed to -1
         // so that the first router increments it to 0
@@ -400,7 +400,7 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         m_ni_out_vcs_enqueue_time[vc] = curCycle();
         m_out_vc_state[vc]->setState(ACTIVE_, curCycle());
     }
-    return true ;
+    return true;
 }
 
 // Looking for a free output vc
@@ -409,15 +409,16 @@ NetworkInterface::calculateVC(int vnet)
 {
     for (int i = 0; i < m_vc_per_vnet; i++) {
         int delta = m_vc_allocator[vnet];
+        int vc = vnet*m_vc_per_vnet + delta;
         m_vc_allocator[vnet]++;
         if (m_vc_allocator[vnet] == m_vc_per_vnet)
             m_vc_allocator[vnet] = 0;
 
-        if (m_out_vc_state[(vnet*m_vc_per_vnet) + delta]->isInState(
+        if (m_out_vc_state[vc]->isInState(
                     IDLE_, curCycle())) {
             vc_busy_counter[vnet] = 0;
-            printf("returned vc=%d\n", (vnet*m_vc_per_vnet) + delta);
-            return ((vnet*m_vc_per_vnet) + delta);
+            printf("returned vc=%d\n", vc);
+            return vc;
         }
     }
 

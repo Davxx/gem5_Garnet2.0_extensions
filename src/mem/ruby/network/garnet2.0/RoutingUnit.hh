@@ -61,10 +61,6 @@ class RoutingUnit
     // Topology-specific direction based routing
     void addInDirection(PortDirection inport_dirn, int inport);
     void addOutDirection(PortDirection outport_dirn, int outport);
-    void addInEscapeVcDor(int dor, int port);
-    void addOutEscapeVcDor(int dor, int port);
-    int getInEscapeVcDor(int port);
-    int getOutEscapeVcDor(int port);
 
     // Routing for Mesh
     int outportComputeXY(RouteInfo route,
@@ -87,18 +83,12 @@ class RoutingUnit
     // Routing Table
     std::vector<NetDest> m_routing_table;
     std::vector<int> m_weight_table;
-    std::vector<int> m_escapevc_dor_in_table;
-    std::vector<int> m_escapevc_dor_out_table;
 
     // Inport and Outport direction to idx maps
     std::map<PortDirection, int> m_inports_dirn2idx;
     std::map<int, PortDirection> m_inports_idx2dirn;
     std::map<int, PortDirection> m_outports_idx2dirn;
     std::map<PortDirection, int> m_outports_dirn2idx;
-
-    // Map escape VC inport to DOR weight
-    std::map<int, int> m_escapevc_inport2dor;
-    std::map<int, int> m_escapevc_outport2dor;
 };
 
 #endif // __MEM_RUBY_NETWORK_GARNET2_0_ROUTINGUNIT_HH__

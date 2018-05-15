@@ -55,10 +55,8 @@ class NetworkLink : public ClockedObject, public Consumer
     void setLinkConsumer(Consumer *consumer);
     void setSourceQueue(flitBuffer *srcQueue);
     void setType(link_type type) { m_type = type; }
-    void setEscapeVcDor(int dor) { m_escapevc_dor = dor; }
 
     link_type getType() { return m_type; }
-    int getEscapeVcDor() { return m_escapevc_dor; }
     void print(std::ostream& out) const {}
     int get_id() const { return m_id; }
     void wakeup();
@@ -78,7 +76,6 @@ class NetworkLink : public ClockedObject, public Consumer
   private:
     const int m_id;
     link_type m_type;
-    int m_escapevc_dor = -1;
     const Cycles m_latency;
 
     flitBuffer *linkBuffer;

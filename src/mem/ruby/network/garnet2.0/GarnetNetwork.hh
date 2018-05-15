@@ -70,6 +70,7 @@ class GarnetNetwork : public Network
     uint32_t getBuffersPerDataVC() { return m_buffers_per_data_vc; }
     uint32_t getBuffersPerCtrlVC() { return m_buffers_per_ctrl_vc; }
     int getRoutingAlgorithm() const { return m_routing_algorithm; }
+    bool escapeVCEnabled() { return m_use_escapevc; }
 
     bool isFaultModelEnabled() const { return m_enable_fault_model; }
     FaultModel* fault_model;
@@ -85,6 +86,7 @@ class GarnetNetwork : public Network
     }
     int getNumRouters();
     int get_router_id(int ni);
+    int get_dor_for_router(int router_id);
 
 
     // Methods used by Topology to setup the network
@@ -95,8 +97,7 @@ class GarnetNetwork : public Network
     void makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
                           const NetDest& routing_table_entry,
                           PortDirection src_outport_dirn,
-                          PortDirection dest_inport_dirn,
-                          int escapevc_dor_src, int escapevc_dor_dest);
+                          PortDirection dest_inport_dirn);
 
     //! Function for performing a functional write. The return value
     //! indicates the number of messages that were written.
@@ -154,6 +155,7 @@ class GarnetNetwork : public Network
     uint32_t m_buffers_per_data_vc;
     int m_routing_algorithm;
     bool m_enable_fault_model;
+    bool m_use_escapevc;
 
     // Statistical variables
     Stats::Vector m_packets_received;
@@ -193,6 +195,7 @@ class GarnetNetwork : public Network
 
     std::vector<VNET_type > m_vnet_type;
     std::vector<Router *> m_routers;   // All Routers in Network
+    std::vector<int> m_escapevc_table;   // Escape VC DOR value for each router
     std::vector<NetworkLink *> m_networklinks; // All flit links in the network
     std::vector<CreditLink *> m_creditlinks; // All credit links in the network
     std::vector<NetworkInterface *> m_nis;   // All NI's in Network

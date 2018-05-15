@@ -43,8 +43,6 @@ RoutingUnit::RoutingUnit(Router *router)
     m_router = router;
     m_routing_table.clear();
     m_weight_table.clear();
-    m_escapevc_dor_in_table.clear();
-    m_escapevc_dor_out_table.clear();
 }
 
 void
@@ -148,32 +146,6 @@ RoutingUnit::addOutDirection(PortDirection outport_dirn, int outport_idx)
     m_outports_idx2dirn[outport_idx]  = outport_dirn;
 }
 
-void
-RoutingUnit::addInEscapeVcDor(int dor, int port)
-{
-    m_escapevc_inport2dor[port] = dor;
-    m_escapevc_dor_in_table.push_back(dor);
-}
-
-void
-RoutingUnit::addOutEscapeVcDor(int dor, int port)
-{
-    m_escapevc_outport2dor[port] = dor;
-    m_escapevc_dor_out_table.push_back(dor);
-}
-
-int
-RoutingUnit::getInEscapeVcDor(int port)
-{
-    return m_escapevc_inport2dor[port];
-}
-
-int
-RoutingUnit::getOutEscapeVcDor(int port)
-{
-    return m_escapevc_outport2dor[port];
-}
-
 // outportCompute() is called by the InputUnit
 // It calls the routing table by default.
 // A template for adaptive topology-specific routing algorithm
@@ -185,12 +157,13 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
                             PortDirection inport_dirn)
 {
     int outport = -1;
+    int router_id = m_router->get_id();
 
-    if (route.dest_router == m_router->get_id()) {
-
+    if (route.dest_router == router_id) {
         // Multiple NIs may be connected to this router,
         // all with output port direction = "Local"
         // Get exact outport id from table
+
         printf("Local route!\n");
         outport = lookupRoutingTable(route);
         return outport;

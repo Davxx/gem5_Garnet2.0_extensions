@@ -65,6 +65,7 @@ GarnetNetwork::GarnetNetwork(const Params *p)
     m_buffers_per_data_vc = p->buffers_per_data_vc;
     m_buffers_per_ctrl_vc = p->buffers_per_ctrl_vc;
     m_routing_algorithm = p->routing_algorithm;
+    m_use_escapevc = p->escapevc;
 
     m_enable_fault_model = p->enable_fault_model;
     if (m_enable_fault_model)
@@ -84,6 +85,7 @@ GarnetNetwork::GarnetNetwork(const Params *p)
          i != p->routers.end(); ++i) {
         Router* router = safe_cast<Router*>(*i);
         m_routers.push_back(router);
+        m_escapevc_table.push_back(router->get_dor());
 
         // initialize the router's network pointers
         router->init_net_ptr(this);
@@ -175,7 +177,7 @@ GarnetNetwork::makeExtInLink(NodeID src, SwitchID dest, BasicLink* link,
     m_creditlinks.push_back(credit_link);
 
     PortDirection dst_inport_dirn = "Local";
-    m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link, -1);
+    m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link);
     m_nis[src]->addOutPort(net_link, credit_link, dest);
 }
 
@@ -206,7 +208,7 @@ GarnetNetwork::makeExtOutLink(SwitchID src, NodeID dest, BasicLink* link,
     PortDirection src_outport_dirn = "Local";
     m_routers[src]->addOutPort(src_outport_dirn, net_link,
                                routing_table_entry,
-                               link->m_weight, credit_link, -1);
+                               link->m_weight, credit_link);
     m_nis[dest]->addInPort(net_link, credit_link);
 }
 
@@ -219,29 +221,20 @@ void
 GarnetNetwork::makeInternalLink(SwitchID src, SwitchID dest, BasicLink* link,
                                 const NetDest& routing_table_entry,
                                 PortDirection src_outport_dirn,
-                                PortDirection dst_inport_dirn,
-                                int escapevc_dor_src, int escapevc_dor_dest)
+                                PortDirection dst_inport_dirn)
 {
     // GarnetIntLink is unidirectional    
     GarnetIntLink* garnet_link = safe_cast<GarnetIntLink*>(link);
     NetworkLink* net_link = garnet_link->m_network_link;
     net_link->setType(INT_);
-    net_link->setEscapeVcDor(escapevc_dor_dest);
     CreditLink* credit_link = garnet_link->m_credit_link;
 
     m_networklinks.push_back(net_link);
     m_creditlinks.push_back(credit_link);
 
-    std::cout << "dor for router " << int(src);
-    std::cout << ": " << escapevc_dor_src;
-    std::cout << ", dor for router " << int(dest);
-    std::cout << ": " << escapevc_dor_dest;
-    printf("\n");
-
-    m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link,
-                               escapevc_dor_dest);
+    m_routers[dest]->addInPort(dst_inport_dirn, net_link, credit_link);
     m_routers[src]->addOutPort(src_outport_dirn, net_link, routing_table_entry,
-                               link->m_weight, credit_link, escapevc_dor_src);
+                               link->m_weight, credit_link);
 }
 
 // Total routers in the network
@@ -256,6 +249,13 @@ int
 GarnetNetwork::get_router_id(int ni)
 {
     return m_nis[ni]->get_router_id();
+}
+
+// Get escape VC DOR value for router ID
+int
+GarnetNetwork::get_dor_for_router(int router_id)
+{
+    return m_escapevc_table[router_id];
 }
 
 void

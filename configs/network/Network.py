@@ -38,6 +38,8 @@ def define_options(parser):
 
     parser.add_option("--tikz", default=False, action="store_true",
                       help="write topology.tikz code to the output directory")
+    parser.add_option("--escapevc", default=False, action="store_true",
+                      help="use VC=0 as Escape VC. Requires NVCS>=2")
     parser.add_option("--topology", type="string", default="Crossbar",
                       help="check configs/topologies for complete set")
     parser.add_option("--mesh-rows", type="int", default=0,
@@ -113,6 +115,7 @@ def init_network(options, network, InterfaceClass):
         network.vcs_per_vnet = options.vcs_per_vnet
         network.buffers_per_data_vc = options.buffers_per_data_vc
         network.buffers_per_ctrl_vc = options.buffers_per_ctrl_vc
+        network.escapevc = options.escapevc
         network.ni_flit_size = options.link_width_bits / 8
         network.routing_algorithm = options.routing_algorithm
         network.garnet_deadlock_threshold = options.garnet_deadlock_threshold

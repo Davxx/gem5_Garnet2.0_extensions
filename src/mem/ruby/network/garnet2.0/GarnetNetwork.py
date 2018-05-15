@@ -42,6 +42,7 @@ class GarnetNetwork(RubyNetwork):
     vcs_per_vnet = Param.UInt32(4, "virtual channels per virtual network");
     buffers_per_data_vc = Param.UInt32(4, "buffers per data virtual channel");
     buffers_per_ctrl_vc = Param.UInt32(1, "buffers per ctrl virtual channel");
+    escapevc = Param.Bool(False, "use VC=0 as Escape VC, requires NVCS>=2");
     routing_algorithm = Param.Int(0,
         "0: Weight-based Table, 1: XY, 2: Random, 3: Adaptive");
     enable_fault_model = Param.Bool(False, "enable network fault model");
@@ -70,3 +71,4 @@ class GarnetRouter(BasicRouter):
                               "virtual channels per virtual network")
     virt_nets = Param.UInt32(Parent.number_of_virtual_networks,
                           "number of virtual networks")
+    escapevc_dor = Param.Int(-1, "Dimension Order Routing for the escape VC")

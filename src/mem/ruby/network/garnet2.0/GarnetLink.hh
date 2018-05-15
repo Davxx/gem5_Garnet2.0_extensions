@@ -59,7 +59,6 @@ class GarnetIntLink : public BasicIntLink
   protected:
     NetworkLink* m_network_link;
     CreditLink* m_credit_link;
-    int m_escapevc_dor;
 };
 
 inline std::ostream&

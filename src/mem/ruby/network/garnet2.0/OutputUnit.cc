@@ -51,6 +51,7 @@ OutputUnit::OutputUnit(int id, PortDirection direction, Router *router)
     m_num_vcs = m_router->get_num_vcs();
     m_vc_per_vnet = m_router->get_vc_per_vnet();
     m_out_buffer = new flitBuffer();
+    m_escapevc_enabled = m_router->get_net_ptr()->escapeVCEnabled();
 
     for (int i = 0; i < m_num_vcs; i++) {
         m_outvc_state.push_back(new OutVcState(i, m_router->get_net_ptr()));
@@ -93,41 +94,41 @@ OutputUnit::has_credit(int out_vc)
     return m_outvc_state[out_vc]->has_credit();
 }
 
-// TODO
+// West-first Escape VC deadlock avoidance for Ring topology.
+// VC=0 is acyclic escape VC; other VC's can be cyclic.
 bool
 OutputUnit::escapevc_allowed(RouteInfo route)
 {
-    NetworkLink *outlink = get_outLink_Ref();
-    int my_dor = outlink->getEscapeVcDor();
-    int dest_dor = route.dest_dor;
+    if (!m_escapevc_enabled)
+        return true;
+
+    int nrouters = m_router->get_net_ptr()->getNumRouters();
     int my_id = m_router->get_id();
     int dest_id = route.dest_router;
 
+    int my_dor = m_router->get_dor();
+    int dest_dor = route.dest_dor;
+    
+    // Get midpoint of DOR route for West-first routing
+    int dor_midpoint = nrouters / 2;
+
+    printf("nrouters=%d\n", nrouters);
     std::cout << "m_direction=" << m_direction;
     printf(", my_id=%d, dest_id=%d\n", my_id, dest_id);
-    printf(", router_dor=%d, dest_dor=%d\n", my_dor, dest_dor);
-    //if ()
+    printf(", my_dor=%d, dest_dor=%d\n", my_dor, dest_dor);
 
-    /*if (m_direction == "East") {
-        if ((my_id >= 8 && my_id <= 15 && dest_id > my_id) ||
-            (my_id >= 0 && my_id <= 7 && dest_id < my_id)) {
-            // heads SW
-            printf("denied SW-headed entry to escape VC path\n");
-            return false;
-        }
-    }*/
+    // Prohibit flit heading in NW/SW direction
     if (m_direction == "West") {
-        if ((my_id >= 0 && my_id <= 7 && dest_id > my_id) ||
-            (my_id >= 8 && my_id <= 15 && dest_id < my_id)) {
-            // heads SW
-            printf("denied SW-headed entry to escape VC path\n");
+        if ((my_dor >= 0 && my_dor < dor_midpoint && dest_dor > my_dor) ||
+            (my_dor >= dor_midpoint && my_dor < nrouters && dest_dor < my_dor)) {
+            printf("denied NW/SW-headed entry to escape VC path\n");
             return false;
         }
     }
+    // Prohibit flit heading in SW direction
     if (m_direction == "South") {
-        if (my_id == 8) {
-            // heads SW
-            printf("denied SW*-headed entry to escape VC path\n");
+        if (my_dor == dor_midpoint) {
+            printf("denied SW-headed entry to escape VC path\n");
             return false;
         }
     }
@@ -141,7 +142,8 @@ OutputUnit::free_vc(int vnet, RouteInfo route)
     int vc_base = vnet*m_vc_per_vnet;
     for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
         if (is_vc_idle(vc, m_router->curCycle())) {
-            if (vc != 0 || (vc == 0 && escapevc_allowed(route)))
+            if (vc % m_vc_per_vnet != 0 ||
+                (vc % m_vc_per_vnet == 0 && escapevc_allowed(route)))
                 return vc;
         }
     }
@@ -154,9 +156,11 @@ int
 OutputUnit::select_free_vc(int vnet, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
+    bool escapevc_enabled = m_router->get_net_ptr()->escapeVCEnabled();
     for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
         if (is_vc_idle(vc, m_router->curCycle())) {
-            if (vc != 0 || (vc == 0 && escapevc_allowed(route))) {
+            if (vc % m_vc_per_vnet != 0 ||
+                (vc % m_vc_per_vnet == 0 && escapevc_allowed(route))) {
                 printf("allowed on vc=%d\n", vc);
                 m_outvc_state[vc]->setState(ACTIVE_, m_router->curCycle());
                 return vc;

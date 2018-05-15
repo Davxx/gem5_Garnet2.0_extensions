@@ -120,7 +120,7 @@ SwitchAllocator::arbitrate_inports()
     // Independent arbiter at each input port
     for (int inport = 0; inport < m_num_inports; inport++) {
         int invc = m_round_robin_invc[inport];
-
+        
         for (int invc_iter = 0; invc_iter < m_num_vcs; invc_iter++) {
 
             if (m_input_unit[inport]->need_stage(invc, SA_,
@@ -294,7 +294,6 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
     // Check if credit needed (for multi-flit packet)
     // Check if ordering violated (in ordered vnet)
 
-    int in_dor, in_dor2, out_dor;
     int outvc = suggested_outvc;
     flit *flit = m_input_unit[inport]->peekTopFlit(invc);
     RouteInfo route = flit->get_route();
@@ -334,21 +333,9 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
         printf("denied: outvc=%d, has_credit=%d\n", outvc, (int)has_credit);
         return false;
     }
-    
-    // Get the escape VC DOR value of the outport link
-    out_dor = outlink->getEscapeVcDor();
 
-    // If inport or outport direction is `Local`, their DOR value will
-    // return -1. Therefore, get the previous link's DOR value from
-    // the highest value of the inport and outport at the sender.
-    in_dor = m_routing_unit->getInEscapeVcDor(inport);
-    in_dor2 = m_routing_unit->getOutEscapeVcDor(outport);
-    in_dor = std::max(in_dor, in_dor2);
-
-    printf("in_dor=%d, out_dor=%d\n", in_dor, out_dor);
-
-    printf("flit p: %p, hops: %d, src_router=%d, dest_router=%d, src_dor=%d, dest_dor=%d\n", flit, flit->get_hops(),
-           route.src_router, route.dest_router, route.src_dor, route.dest_dor);
+    printf("flit p: %p, hops: %d, src_router=%d, dest_router=%d\n", flit, flit->get_hops(),
+           route.src_router, route.dest_router);
 
     /*if (invc == 0 && outvc != 0 && nhops > 0) {
         printf("packet not allowed to leave vc\n");
@@ -367,10 +354,8 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
 
     // Prohibit local VC transfers, i.e.: router_x.vc_i to router_x_vc_j | i!=j,
     // since this will induce deadlocks
-    if (inport_dirn == "Local" && invc != outvc) {
-        printf("Local not allowed\n");
+    if (inport_dirn == "Local" && invc != outvc)
         return false;
-    }
 
     printf("allowed on outvc=%d\n", outvc);
 
@@ -404,8 +389,8 @@ SwitchAllocator::vc_allocate(int outport, int inport, int invc)
 {
     flit *flit = m_input_unit[inport]->peekTopFlit(invc);
     RouteInfo route = flit->get_route();
-    printf("allocate flit p: %p, hops: %d, src_router=%d, dest_router=%d, src_dor=%d, dest_dor=%d\n", flit, flit->get_hops(),
-       route.src_router, route.dest_router, route.src_dor, route.dest_dor);
+    printf("allocate flit p: %p, hops: %d, src_router=%d, dest_router=%d\n", flit, flit->get_hops(),
+       route.src_router, route.dest_router);
 
     // Select a free VC from the output port
     int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), route);

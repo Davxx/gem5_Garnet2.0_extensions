@@ -43,7 +43,6 @@ GarnetIntLink::GarnetIntLink(const Params *p)
 
     m_network_link = p->network_link;
     m_credit_link = p->credit_link;
-    m_escapevc_dor  = p->escapevc_dor;
 }
 
 void
