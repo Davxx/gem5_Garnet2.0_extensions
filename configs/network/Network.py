@@ -40,6 +40,8 @@ def define_options(parser):
                       help="write topology.tikz code to the output directory")
     parser.add_option("--escapevc", default=False, action="store_true",
                       help="use VC=0 as Escape VC. Requires NVCS>=2")
+    parser.add_option("--concentration-factor", type="int", default=1,
+                      help="the number cpus connected per router")
     parser.add_option("--topology", type="string", default="Crossbar",
                       help="check configs/topologies for complete set")
     parser.add_option("--mesh-rows", type="int", default=0,

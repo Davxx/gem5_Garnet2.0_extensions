@@ -70,7 +70,7 @@ class GarnetNetwork : public Network
     uint32_t getBuffersPerDataVC() { return m_buffers_per_data_vc; }
     uint32_t getBuffersPerCtrlVC() { return m_buffers_per_ctrl_vc; }
     int getRoutingAlgorithm() const { return m_routing_algorithm; }
-    bool escapeVCEnabled() { return m_use_escapevc; }
+    bool escapeVCEnabled() { return m_escapevc_enabled; }
 
     bool isFaultModelEnabled() const { return m_enable_fault_model; }
     FaultModel* fault_model;
@@ -155,7 +155,7 @@ class GarnetNetwork : public Network
     uint32_t m_buffers_per_data_vc;
     int m_routing_algorithm;
     bool m_enable_fault_model;
-    bool m_use_escapevc;
+    bool m_escapevc_enabled;
 
     // Statistical variables
     Stats::Vector m_packets_received;

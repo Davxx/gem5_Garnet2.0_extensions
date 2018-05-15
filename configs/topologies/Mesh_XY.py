@@ -80,20 +80,47 @@ class Mesh_XY(SimpleTopology):
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
-        num_routers = options.num_cpus
+        concentration_factor = options.concentration_factor
+        ncpus = options.num_cpus
+        nrouters = ncpus / concentration_factor
         nrows = options.mesh_rows
+
+        # First determine which nodes are cache cntrls vs. dirs vs. dma
+        cache_nodes = []
+        dir_nodes = []
+        dma_nodes = []
+        for node in nodes:
+            if node.type == 'L1Cache_Controller' or node.type == 'L2Cache_Controller':
+                cache_nodes.append(node)
+            elif node.type == 'Directory_Controller':
+                dir_nodes.append(node)
+            elif node.type == 'DMA_Controller':
+                dma_nodes.append(node)
+        print(cache_nodes)
+        print(dir_nodes)
+        print(dma_nodes)
+
+        # Obviously the number of rows must be <= the number of routers
+        # and evenly divisible.  Also the number of caches must be a
+        # multiple of the number of routers and the number of directories
+        # must be <= the number of cache nodes
+        assert(nrows > 0 and nrows <= nrouters)
+        ncols = int(nrouters / nrows)
+        print nrows, ncols
+
+        assert(ncols * nrows == nrouters)
+        assert(nrouters * concentration_factor == ncpus)
+
+        caches_per_router, remainder = divmod(len(cache_nodes), nrouters)
+        assert(remainder == 0)
+
+        ndirs = options.num_dirs
+        assert(len(dir_nodes) <= len(cache_nodes))
 
         # Default values for link latency and router latency.
         # Can be over-ridden on a per link/router basis
         self.link_latency = options.link_latency # used by simple and garnet
         router_latency = options.router_latency # only used by garnet
-
-        # There must be an evenly divisible number of cntrls to routers
-        # Also, obviously the number or rows must be <= the number of routers
-        cntrls_per_router, remainder = divmod(len(nodes), num_routers)
-        assert(nrows > 0 and nrows <= num_routers)
-        ncols = int(num_routers / nrows)
-        assert(ncols * nrows == num_routers)
 
         # Optionally generate Tikz topology code in 'output_directory/topo.tex' and
         # convert it to 'output_directory/topology.png'
@@ -101,41 +128,40 @@ class Mesh_XY(SimpleTopology):
             self.tikz_out = TikzTopology(m5.options.outdir, nrows, ncols)
 
         # Create the routers in the mesh
-        self.routers = [Router(router_id=i, latency = router_latency) for i in range(num_routers)]
+        self.routers = [Router(router_id=i, latency=router_latency) for i in range(nrouters)]
         network.routers = self.routers
 
         # Link counter to set unique link ids
         self.link_count = 0
 
-        # Add all but the remainder nodes to the list of nodes to be uniformly
-        # distributed across the network.
-        network_nodes = []
-        remainder_nodes = []
-        for node_index in xrange(len(nodes)):
-            if node_index < (len(nodes) - remainder):
-                network_nodes.append(nodes[node_index])
-            else:
-                remainder_nodes.append(nodes[node_index])
-
-        # Connect each node to the appropriate router.
-        # These should be of type L1Cache_Controllers or Directory_Controller
+        # Connect each cache node to the appropriate router
         ext_links = []
-        for (i, node) in enumerate(network_nodes):
-            cntrl_level, router_id = divmod(i, num_routers)
-            assert(cntrl_level < cntrls_per_router)
+        router_id = 0
+        for (i, node) in enumerate(cache_nodes):
+            if i != 0 and i % caches_per_router == 0:
+                router_id += 1
+            print "connecting node", node, "to router", router_id
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[router_id],
                                      latency=self.link_latency))
             self.link_count += 1
 
-        # Connect the remaining nodes to router 0.
-        # These should only be DMA nodes
-        for (i, node) in enumerate(remainder_nodes):
+       # Connect each directory node to the appropriate router
+        router_id = 0
+        for (i, node) in enumerate(dir_nodes):
+            print "connecting node", node, "to router", router_id
+            ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
+                                     int_node=self.routers[router_id],
+                                     latency=self.link_latency))
+            self.link_count += 1
+            router_id += nrouters / ndirs
+
+        # Connect the DMA nodes to router 0
+        for (i, node) in enumerate(dma_nodes):
             assert(node.type == 'DMA_Controller')
-            assert(i < remainder)
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[0],
-                                     latency=self.link_latency))
+                                     latency = link_latency))
             self.link_count += 1
 
         network.ext_links = ext_links

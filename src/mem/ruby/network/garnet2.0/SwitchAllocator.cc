@@ -60,6 +60,7 @@ SwitchAllocator::init()
     m_input_unit = m_router->get_inputUnit_ref();
     m_output_unit = m_router->get_outputUnit_ref();
     m_routing_unit = m_router->get_routingUnit_ref();
+    m_escapevc_enabled = m_router->get_net_ptr()->escapeVCEnabled();
 
     m_num_inports = m_router->get_num_inports();
     m_num_outports = m_router->get_num_outports();
@@ -341,20 +342,10 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
         printf("packet not allowed to leave vc\n");
         return false;
     }*/
-    /*if (invc == 0 && outvc == 0) {
-        if (outport_dirn == "East" && router_id >= 8 && route.dest_router <= 7) {
-            printf("East packet not allowed to enter vc\n");
-            return false;
-        }
-        if (outport_dirn == "East" && router_id <= 7 && route.dest_router >= 8) {
-            printf("East* packet not allowed to enter vc\n");
-            return false;
-        }
-    }*/
 
-    // Prohibit local VC transfers, i.e.: router_x.vc_i to router_x_vc_j | i!=j,
-    // since this will induce deadlocks
-    if (inport_dirn == "Local" && invc != outvc)
+    // Prohibit local VC transfers, i.e.: router_x.vc_i to router_x.vc_j | i!=j,
+    // since this will induce deadlocks on a ring
+    if (m_escapevc_enabled && inport_dirn == "Local" && invc != outvc)
         return false;
 
     printf("allowed on outvc=%d\n", outvc);

@@ -43,6 +43,7 @@ class GarnetNetwork(RubyNetwork):
     buffers_per_data_vc = Param.UInt32(4, "buffers per data virtual channel");
     buffers_per_ctrl_vc = Param.UInt32(1, "buffers per ctrl virtual channel");
     escapevc = Param.Bool(False, "use VC=0 as Escape VC, requires NVCS>=2");
+    concentration_factor = Param.Int(1, "the number cpus connected per router");
     routing_algorithm = Param.Int(0,
         "0: Weight-based Table, 1: XY, 2: Random, 3: Adaptive");
     enable_fault_model = Param.Bool(False, "enable network fault model");

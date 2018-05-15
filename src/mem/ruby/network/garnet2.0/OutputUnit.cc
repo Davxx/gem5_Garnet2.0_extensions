@@ -94,7 +94,7 @@ OutputUnit::has_credit(int out_vc)
     return m_outvc_state[out_vc]->has_credit();
 }
 
-// West-first Escape VC deadlock avoidance for Ring topology.
+// Escape VC deadlock avoidance for Ring topology.
 // VC=0 is acyclic escape VC; other VC's can be cyclic.
 bool
 OutputUnit::escapevc_allowed(RouteInfo route)
@@ -109,7 +109,7 @@ OutputUnit::escapevc_allowed(RouteInfo route)
     int my_dor = m_router->get_dor();
     int dest_dor = route.dest_dor;
     
-    // Get midpoint of DOR route for West-first routing
+    // Get midpoint of DOR route
     int dor_midpoint = nrouters / 2;
 
     printf("nrouters=%d\n", nrouters);
@@ -156,7 +156,6 @@ int
 OutputUnit::select_free_vc(int vnet, RouteInfo route)
 {
     int vc_base = vnet*m_vc_per_vnet;
-    bool escapevc_enabled = m_router->get_net_ptr()->escapeVCEnabled();
     for (int vc = vc_base + m_vc_per_vnet - 1; vc >= vc_base; vc--) {
         if (is_vc_idle(vc, m_router->curCycle())) {
             if (vc % m_vc_per_vnet != 0 ||

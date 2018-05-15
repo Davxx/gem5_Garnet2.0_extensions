@@ -23,29 +23,31 @@
 HIDEWARNERROR=0         # Bool: hide warnings and errors
 HIDESTDOUT=0            # Bool: hide stdout
 GARNETDEBUG=1           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
-NVCS=2                  # Number of virtual channels (VC) per virtual network
+NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per data VC
 LINKWIDTHBITS=32        # Width in bits for all links inside the network
 DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
-USE_ESCAPE_VC=1         # Bool: Use VC=0 as Escape VC. Requires NVCS>=2
+USE_ESCAPE_VC=0         # Bool: Use VC=0 as Escape VC. Requires NVCS>=2
 INJVNET=0               # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
-NCPU=16
+CONCENTRATION_FACTOR=4  # Number of cpu's per router, for FlattenedButterfly
+NCPUS=64                # Number of cpu's
+NDIRS=64                # Number of directory controllers, must <= NCPUS
 NROWS=2
-TOPO=Ring
+TOPO=FlattenedButterfly
 IJRATE=0.99
 ROUTINGALGO=0
 SYNTH=uniform_random
-NCYCLES=5000
+NCYCLES=500
 
 # Send between specific router id's. -1: disable
 SENDER_ID=-1
 DEST_ID=-1
 
 if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
-    NCPU=$1
+    NCPUS=$1
 else
     # Print help info
     sed -n "3,20p" rungarnet
@@ -79,8 +81,18 @@ case "$ROUTINGALGO" in
     *) RALGNAME=unknown_routing ;;
 esac
 
-NCOLS=$(($NCPU/$NROWS))
-OUTDIR="m5out/"$TOPO-$NCPU"core-"$NROWS"x"$NCOLS-$SYNTH-$IJRATE-$RALGNAME
+if [ $CONCENTRATION_FACTOR -gt 1 ]; then
+    NCOLS=$(($NCPUS/$NROWS/$CONCENTRATION_FACTOR))
+    CONCENTRATION_STRING=$CONCENTRATION_FACTOR"cpus_per_router-"
+    CONCENTRATION_FACTOR="--concentration-factor="$CONCENTRATION_FACTOR
+else
+    NCOLS=$(($NCPUS/$NROWS))
+    CONCENTRATION_STRING=""
+    CONCENTRATION_FACTOR=""
+fi
+
+
+OUTDIR="m5out/"$TOPO-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE-$RALGNAME
 
 # Generate output dir name
 if [ -d $OUTDIR ]; then
@@ -97,8 +109,8 @@ mkdir -p $OUTDIR
 
 # Redirect stdout to file
 if [ $GARNETDEBUG -eq 1 ]; then
-    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
-#    GARNETDEBUG_FLAGS=""
+#    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+    GARNETDEBUG_FLAGS=""
     GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
 else
     GARNETDEBUG_FLAGS=""
@@ -139,8 +151,8 @@ export GEM5SIMTYPE=GarnetStandalone
 
 RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
---num-cpus=$NCPU \
---num-dirs=$NCPU \
+--num-cpus=$NCPUS \
+--num-dirs=$NCPUS \
 --topology=$TOPO \
 --mesh-rows=$NROWS \
 --sim-cycles=$NCYCLES \
@@ -153,7 +165,10 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 --buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
 --inj-vnet=$INJVNET \
---tikz $USE_ESCAPE_VC $SEND_TO_ROUTER_IDS"
+--tikz \
+$CONCENTRATION_FACTOR \
+$USE_ESCAPE_VC \
+$SEND_TO_ROUTER_IDS"
 
 redirect_cmd() {
     if [ $GARNETDEBUG -eq 1 ]; then
