@@ -22,7 +22,7 @@ if os.path.isfile(in_file_name):
             line = fin.readline()
             if not line:
                 break
-            elif "system.ruby.network.packets_received" in line:
+            elif "system.ruby.network.pwrStateResidencyTicks" in line:
                 with open(out_file_name, "wt") as fout:
                     shutil.copyfileobj(fin, fout)
                     break

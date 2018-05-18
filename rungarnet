@@ -20,11 +20,11 @@ HIDESTDOUT=1            # Bool: hide stdout
 GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
 NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
-NBUFFERS_PER_CTRL_VC=1  # Number of buffers per data VC
-LINKWIDTHBITS=32        # Width in bits for all links inside the network
+NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
+LINKWIDTHBITS=128        # Width in bits for all links inside the network
 DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
 USE_ESCAPE_VC=0         # Bool: for ring; use VC=0 as Escape VC. Requires NVCS>=2
-INJVNET=-1               # Only inject in this vnet (0, 1 or 2).
+INJVNET=0               # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
 CONCENTRATION_FACTOR=1  # Number of cpu's per router
@@ -71,6 +71,12 @@ fi
 if [ "$#" -gt 6 ]; then
     NCYCLES=$7
 fi
+
+# Automatically enable Escape VC's for Ring topology
+if [ "$TOPOLOGY" == "Ring" ]; then
+    USE_ESCAPE_VC=1
+fi
+
 
 # Suffix output dir name with routing algorithm
 case "$ROUTINGALGORITHM" in
