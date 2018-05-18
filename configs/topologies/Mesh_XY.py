@@ -96,9 +96,6 @@ class Mesh_XY(SimpleTopology):
                 dir_nodes.append(node)
             elif node.type == 'DMA_Controller':
                 dma_nodes.append(node)
-        print(cache_nodes)
-        print(dir_nodes)
-        print(dma_nodes)
 
         # Obviously the number of rows must be <= the number of routers
         # and evenly divisible.  Also the number of caches must be a
@@ -106,7 +103,6 @@ class Mesh_XY(SimpleTopology):
         # must be <= the number of cache nodes
         assert(nrows > 0 and nrows <= nrouters)
         ncols = int(nrouters / nrows)
-        print nrows, ncols
 
         assert(ncols * nrows == nrouters)
         assert(nrouters * concentration_factor == ncpus)
@@ -140,7 +136,6 @@ class Mesh_XY(SimpleTopology):
         for (i, node) in enumerate(cache_nodes):
             if i != 0 and i % caches_per_router == 0:
                 router_id += 1
-            print "connecting node", node, "to router", router_id
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[router_id],
                                      latency=self.link_latency))
@@ -149,7 +144,6 @@ class Mesh_XY(SimpleTopology):
        # Connect each directory node to the appropriate router
         router_id = 0
         for (i, node) in enumerate(dir_nodes):
-            print "connecting node", node, "to router", router_id
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[router_id],
                                      latency=self.link_latency))

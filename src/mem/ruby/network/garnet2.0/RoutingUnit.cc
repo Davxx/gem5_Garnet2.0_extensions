@@ -164,7 +164,6 @@ RoutingUnit::outportCompute(RouteInfo route, int inport,
         // all with output port direction = "Local"
         // Get exact outport id from table
 
-        printf("Local route!\n");
         outport = lookupRoutingTable(route);
         return outport;
     }
@@ -309,62 +308,12 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
 }
 
 // Adaptive routing algorithm
+// not implemented
 int
 RoutingUnit::outportComputeAdaptive(RouteInfo route,
                                     int inport,
                                     PortDirection inport_dirn)
 {
-    int M5_VAR_USED nrows = m_router->get_net_ptr()->getNumRows();
-    int ncols = m_router->get_net_ptr()->getNumCols();
-    
-    int my_id = m_router->get_id();
-    int my_x = my_id % ncols;
-    int my_y = my_id / ncols;
-
-    int dest_id = route.dest_router;
-    int dest_x = dest_id % ncols;
-    int dest_y = dest_id / ncols;
-
-    int vnet = route.vnet;
-    NetDest msg_destination = route.net_dest;
-    
-    int min_weight = INFINITE_;
-    std::vector<int> output_link_candidates;
-    int ncandidates = 0;
-    int minimal_route_link = -1;
-
-    // Collect one minimally routed output link
-    for (int link = 0; link < m_routing_table.size(); link++) {
-        if (msg_destination.intersectionIsNotEmpty(m_routing_table[link])) {
-            minimal_route_link = link;
-            break;
-        }
-    }
-   // Collect all non-minimally routed candidate output links
-    for (int link = 0; link < m_routing_table.size(); link++) {
-        PortDirection portdir = m_outports_idx2dirn[link];
-        std::cout << "to: " << portdir;
-        if (link == minimal_route_link) {
-            std::cout << " = minimal";
-        }
-        else if (portdir != "Local") { // TODO
-            std::cout << " = possible";
-        }
-        ncandidates++;
-        output_link_candidates.push_back(link);
-        std::cout << "\n";
-    }
-    if (output_link_candidates.size() == 0) {
-        fatal("Fatal Error:: No Route exists from this Router.");
-        exit(0);
-    }
-
-    // If no minimal link, randomly select any candidate output link
-    int candidate = minimal_route_link;
-    if (candidate == -1)
-        candidate = rand() % ncandidates;
-    
-    std::cout << "selected_dir=" << m_outports_idx2dirn[output_link_candidates.at(candidate)];
-    printf(", ncandidates=%d, src_router=%d, dst_router=%d\n", ncandidates, my_id, dest_id);
-    return output_link_candidates.at(candidate);
+    assert(0);
+    return -1;
 }

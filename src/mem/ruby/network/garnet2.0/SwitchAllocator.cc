@@ -338,11 +338,6 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
     printf("flit p: %p, hops: %d, src_router=%d, dest_router=%d\n", flit, flit->get_hops(),
            route.src_router, route.dest_router);
 
-    /*if (invc == 0 && outvc != 0 && nhops > 0) {
-        printf("packet not allowed to leave vc\n");
-        return false;
-    }*/
-
     // Prohibit local VC transfers, i.e.: router_x.vc_i to router_x.vc_j | i!=j,
     // since this will induce deadlocks on a ring
     if (m_escapevc_enabled && inport_dirn == "Local" && invc != outvc)

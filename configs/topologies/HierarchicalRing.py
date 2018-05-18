@@ -28,15 +28,17 @@ class HierarchicalRing(SimpleTopology):
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink, is_central_ring):
         # Makes a bidirectional link between routers src_id and dst_id
 
+        part_of_central_ring = False
         new_weight = weight
-        num_routers = self.nrows * self.ncols
+        self.nrouters = self.nrows * self.ncols
         if (not is_central_ring and src_outport == "North") or is_central_ring:
-            if dst_id < num_routers - self.ncols and src_id >= self.ncols and\
+            if dst_id < self.nrouters - self.ncols and src_id >= self.ncols and\
                 dst_id % self.ncols != 0 and (dst_id + 1) % self.ncols != 0:
                 # Link is part of central ring ==> gets stronger weight = 1
+                part_of_central_ring = True
                 new_weight = 1
         
-        if (new_weight == 1 and not (src_id, dst_id) in self.central_ring_links and\
+        if (part_of_central_ring and not (src_id, dst_id) in self.central_ring_links and\
             not (dst_id, src_id) in self.central_ring_links) or new_weight == 2:
 
             self.int_links.append(IntLink(link_id=self.link_count,
@@ -46,6 +48,7 @@ class HierarchicalRing(SimpleTopology):
                                           dst_inport=dst_inport,
                                           latency=self.link_latency,
                                           weight=new_weight))
+
             self.int_links.append(IntLink(link_id=self.link_count + 1,
                                           src_node=self.routers[dst_id],
                                           dst_node=self.routers[src_id],
@@ -54,7 +57,7 @@ class HierarchicalRing(SimpleTopology):
                                           latency=self.link_latency,
                                           weight=new_weight))
 
-            if new_weight == 1:
+            if part_of_central_ring:
                 self.central_ring_links.append((src_id, dst_id))
 
             thick_line = "line width=1mm" if new_weight == 1 else ""
@@ -87,7 +90,7 @@ class HierarchicalRing(SimpleTopology):
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
-        num_routers = options.num_cpus
+        self.nrouters = options.num_cpus
         self.nrows = options.mesh_rows
 
         # Default values for link latency and router latency.
@@ -97,10 +100,10 @@ class HierarchicalRing(SimpleTopology):
 
         # There must be an evenly divisible number of cntrls to routers
         # Also, obviously the number or rows must be <= the number of routers
-        cntrls_per_router, remainder = divmod(len(nodes), num_routers)
-        assert(self.nrows > 0 and self.nrows <= num_routers)
-        self.ncols = int(num_routers / self.nrows)
-        assert(self.ncols * self.nrows == num_routers)
+        cntrls_per_router, remainder = divmod(len(nodes), self.nrouters)
+        assert(self.nrows > 0 and self.nrows <= self.nrouters)
+        self.ncols = int(self.nrouters / self.nrows)
+        assert(self.ncols * self.nrows == self.nrouters)
         
         # There must be an even number of rows and columns
         assert(self.nrows % 2 == 0 and self.ncols % 2 == 0)
@@ -110,8 +113,81 @@ class HierarchicalRing(SimpleTopology):
         if options.tikz:
             self.tikz_out = TikzTopology(m5.options.outdir, self.nrows, self.ncols)
 
+        self.central_ring_links = []
+        rings_left = []
+
+        # Gather routers for left half of sub-rings
+        midpoint = self.ncols / 2
+        for x in xrange(0, self.nrows, 2):
+            ring = np.zeros((2, midpoint), dtype=int)
+
+            offset = 0
+            for i in xrange(self.ncols):
+                if i >= midpoint:
+                    offset = 1
+
+                router_index = i - offset * midpoint
+                ring[1 - offset][router_index] = router_index + ((x + offset) * self.ncols)
+
+            rings_left.append(ring)
+
+        # Gather routers for right half of sub-rings
+        rings_right = rings_left[:]
+        for i in xrange(len(rings_right)):
+            rings_right[i] = rings_right[i] + midpoint
+        
+        assert(len(rings_left) >= 2 and len(rings_right) >= 2)
+
+        # Gather routers situated on central ring
+        central_ring_height = self.nrows - 2
+        central_ring = np.zeros((central_ring_height, 2), dtype=int)
+        for i in xrange(central_ring_height):
+            id1 = (i + 1) * self.ncols + midpoint - 1
+            id2 = id1 + 1
+            central_ring[central_ring_height - 1 - i][0] = id1
+            central_ring[central_ring_height - 1 - i][1] = id2
+
+        assert(central_ring.size >= 4)
+
+        # Create escape VC DOR table
+        dor = [-1] * self.nrouters
+        dor_base = 0
+        for ring_num, ring in enumerate(rings_left):
+            top = 1 if ring_num == len(rings_left) - 1 else 0
+
+            i = dor_base + len(ring[top]) - 1
+            for r in ring[top]:
+                dor[r] = i
+                i -= 1
+
+            j = dor_base + len(ring[1 - top])
+            for r in ring[1 - top]:
+                dor[r] = j
+                j += 1
+            
+            dor_base += rings_left[0].size
+
+        dor_base = rings_right[0].size * len(rings_right) * 2
+
+        for ring_num, ring in enumerate(rings_right):
+            dor_base -= rings_left[0].size
+            top = 0 if ring_num == len(rings_left) - 1 else 1
+
+            i = dor_base + 2 * len(ring[top]) - 1
+            for r in ring[top]:
+                dor[r] = i
+                i -= 1
+
+            j = dor_base
+            for r in ring[1 - top]:
+                dor[r] = j
+                j += 1
+
         # Create the routers in the mesh
-        self.routers = [Router(router_id=i, latency = router_latency) for i in range(num_routers)]
+        #self.routers = [Router(router_id=i, latency=router_latency, escapevc_dor=dor[i]) \
+        #                for i in range(self.nrouters)]
+        self.routers = [Router(router_id=i, latency=router_latency, escapevc_dor=i) for i in range(self.nrouters)]
+
         network.routers = self.routers
 
         # Link counter to set unique link ids
@@ -131,7 +207,7 @@ class HierarchicalRing(SimpleTopology):
         # These should be of type L1Cache_Controllers or Directory_Controller
         ext_links = []
         for (i, node) in enumerate(network_nodes):
-            cntrl_level, router_id = divmod(i, num_routers)
+            cntrl_level, router_id = divmod(i, self.nrouters)
             assert(cntrl_level < cntrls_per_router)
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[router_id],
@@ -174,28 +250,6 @@ class HierarchicalRing(SimpleTopology):
                            "every edge/.append style={line width=0.3mm}]")
 
         self.int_links = []
-        self.central_ring_links = []
-        rings_left = []
-
-        # Gather routers for left half of sub-rings
-        midpoint = self.ncols / 2
-        for x in xrange(0, self.nrows, 2):
-            ring = np.zeros((2, midpoint), dtype=int)
-
-            offset = 0
-            for i in xrange(self.ncols):
-                if i >= midpoint:
-                    offset = 1
-
-                router_index = i - offset * midpoint
-                ring[1 - offset][router_index] = router_index + ((x + offset) * self.ncols)
-
-            rings_left.append(ring)
-
-        # Gather routers for right half of sub-rings
-        rings_right = rings_left[:]
-        for i in xrange(len(rings_right)):
-            rings_right[i] = rings_right[i] + midpoint
 
         # Create sub-ring links (weight = 2)
         rings = rings_left + rings_right
@@ -203,14 +257,6 @@ class HierarchicalRing(SimpleTopology):
         for ring in rings:
             self.connectRing(ring, 2, IntLink)
 
-        # Gather routers situated on central ring
-        central_ring_height = self.nrows - 2
-        central_ring = np.zeros((central_ring_height, 2), dtype=int)
-        for i in xrange(central_ring_height):
-            id1 = (i + 1) * self.ncols + midpoint - 1
-            id2 = id1 + 1
-            central_ring[central_ring_height - 1 - i][0] = id1
-            central_ring[central_ring_height - 1 - i][1] = id2
 
         # Create central ring links (weight = 1)
         self.connectRing(central_ring, 1, IntLink, True)

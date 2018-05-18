@@ -1,6 +1,5 @@
 # Author: David Smelt
-# Adapted from: MeshDirCorners_XY.py (c) 2010 Advanced Micro Devices, Inc.
-#               and Mesh_XY.py (c) 2016 Georgia Institute of Technology
+# Adapted from: Mesh_XY.py (c) 2010 Advanced Micro Devices, Inc., 2016 Georgia Institute of Technology
 
 import m5
 from m5.params import *
@@ -9,10 +8,12 @@ from m5.objects import *
 from BaseTopology import SimpleTopology
 from TikzTopology import TikzTopology
 
-class FlattenedButterfly(SimpleTopology):
-    # Creates a generic FlattenedButterfly topology assuming an equal number of cache
+import numpy as np
+
+class Line(SimpleTopology):
+    # Creates a simple Line topology assuming an equal number of cache
     # and directory controllers.
-    description='FlattenedButterfly'
+    description='Line'
 
     def __init__(self, controllers):
         self.nodes = controllers
@@ -24,43 +25,38 @@ class FlattenedButterfly(SimpleTopology):
         if not self.tikz_out is None:
             self.tikz_out.write(ln)
 
-    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink, tikz_bend_right):
+    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
         # Makes a bidirectional link between self.routers src_id and dst_id
 
-        if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
-            self.lst_links.append((src_id, dst_id))
+        # src->dst link
+        self.int_links.append(IntLink(link_id=self.link_count,
+                                      src_node=self.routers[src_id],
+                                      dst_node=self.routers[dst_id],
+                                      src_outport=src_outport,
+                                      dst_inport=dst_inport,
+                                      latency=self.link_latency,
+                                      weight=weight))
 
-            self.int_links.append(IntLink(link_id=self.link_count,
-                                          src_node=self.routers[src_id],
-                                          dst_node=self.routers[dst_id],
-                                          src_outport=src_outport,
-                                          dst_inport=dst_inport,
-                                          latency=self.link_latency,
-                                          weight=weight))
-            self.int_links.append(IntLink(link_id=self.link_count + 1,
-                                          src_node=self.routers[dst_id],
-                                          dst_node=self.routers[src_id],
-                                          src_outport=dst_inport,
-                                          dst_inport=src_outport,
-                                          latency=self.link_latency,
-                                          weight=weight))
-            self.link_count += 2
+        # dst->src link
+        self.int_links.append(IntLink(link_id=self.link_count + 1,
+                                      src_node=self.routers[dst_id],
+                                      dst_node=self.routers[src_id],
+                                      src_outport=dst_inport,
+                                      dst_inport=src_outport,
+                                      latency=self.link_latency,
+                                      weight=weight))
 
-            # Generate Tikz code for edge
-            thick_line = "line width=0.6mm" if weight == 1 else ""
-            bend_right = "bend right=30" if tikz_bend_right else ""
-
-            if bend_right != "" and thick_line != "":
-                bend_right = bend_right + ","
-
-            self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, bend_right + thick_line, dst_id))
+        thick_line = "line width=1mm" if weight == 1 else ""
+        self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, thick_line, dst_id))
+        self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(dst_id, thick_line, src_id))
+        self.link_count += 2
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
         nodes = self.nodes
         concentration_factor = options.concentration_factor
         ncpus = options.num_cpus
         nrouters = ncpus / concentration_factor
-        nrows = options.mesh_rows
+        nrows = 1
 
         # First determine which nodes are cache cntrls vs. dirs vs. dma
         cache_nodes = []
@@ -137,50 +133,21 @@ class FlattenedButterfly(SimpleTopology):
 
         network.ext_links = ext_links
 
-        if not self.tikz_out is None:
-            # Generate Tikz nodes
 
-            for row in xrange(nrows):
-                first_col = False
+        # Place routers consecutively on the Line
+        self.writeTikz("    \\node[main node] (0) [above left=0cm] {0};")
+        for r in xrange(1, ncols):
+            self.writeTikz("    \\node[main node] ({0}) [right of={{{1}}}] {{{2}}};".format(r, r - 1, r))
 
-                for col in xrange(ncols):
-                    r = col + (row * ncols)
-
-                    if not first_col:
-                        first_col = True
-
-                        if row == 0:
-                            self.writeTikz("    \\node[main node] (0) [below left=0cm] {0};")
-                        else:
-                            self.writeTikz("    \\node[main node] ({0}) [above of={{{1}}}] {{{2}}};".format(r,
-                                           r - ncols, r))
-                    else:
-                        self.writeTikz("    \\node[main node] ({0}) [right of={{{1}}}] {{{2}}};".format(r, r - 1, r))
-
-            self.writeTikz("\n    \\path[every node/.style={font=\\sffamily\\footnotesize},"
-                           "every edge/.append style={bend left=30,line width=0.2mm}]")
+        self.writeTikz("\n    \\path[every node/.style={font=\\sffamily\\footnotesize},"
+                       "every edge/.append style={line width=0.3mm}]")
 
         self.int_links = []
-        self.lst_links = []
 
-        # Create the flattened butterfly links.
-        for row in xrange(nrows):
-            for col in xrange(ncols):
-                src_id = col + (row * ncols)
-
-                for x in xrange(1, ncols):
-                    dst_col = (col + x) % ncols
-                    dst_id = dst_col + (row * ncols)
-
-                    # Horizontal link (weight = 1)
-                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink, (row < nrows / 2))
-
-                for y in xrange(1, nrows):
-                    dst_row = (row + y) % nrows
-                    dst_id = col + (dst_row * ncols)
-
-                    # Vertical link (weight = 2)
-                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink, (col >= ncols / 2))
+        # Create the ring's links
+        for r in xrange(ncols - 1):
+            # Destination router is east of source router
+            self.makeBiLink(r, r + 1, 1, "East", "West", IntLink)
 
         if not self.tikz_out is None:
             self.tikz_out.close()

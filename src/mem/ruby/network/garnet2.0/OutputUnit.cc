@@ -112,11 +112,6 @@ OutputUnit::escapevc_allowed(RouteInfo route)
     // Get midpoint of DOR route
     int dor_midpoint = nrouters / 2;
 
-    printf("nrouters=%d\n", nrouters);
-    std::cout << "m_direction=" << m_direction;
-    printf(", my_id=%d, dest_id=%d\n", my_id, dest_id);
-    printf(", my_dor=%d, dest_dor=%d\n", my_dor, dest_dor);
-
     // Prohibit flit heading in NW/SW direction
     if (m_direction == "West") {
         if ((my_dor >= 0 && my_dor < dor_midpoint && dest_dor > my_dor) ||

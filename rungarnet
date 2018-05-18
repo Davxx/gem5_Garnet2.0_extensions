@@ -2,18 +2,13 @@
 #
 # Script for running GarnetStandalone simulations
 #
-# Usage: ./r n_cpus n_rows topology_py_file routing_algorithm \
+# Usage: ./r n_cpus n_rows concentration_factor topology_py_file \
 #            flit_injection_rate synthetic_traffic_type n_cycles
 #
 #                 n_cpus: number of cpu's
 #                 n_rows: number of rows in the topology structure
+#   concentration_factor: number of cpu's per router
 #       topology_py_file: name of the .py-file in configs/topologies/
-#      routing_algorithm: routing algorithm in network, implemented in
-#                         src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
-#                           0: Weight-based table
-#                           1: XY (for Mesh)
-#                           2: Random (custom)
-#                           3: Adaptive (custom)
 #    flit_injection_rate: traffic injection rate in packets/node/cycle
 # synthetic_traffic_type: uniform_random, tornado, bit_complement, bit_reverse,
 #                         bit_rotation, neighbor, shuffle, transpose
@@ -21,26 +16,31 @@
 
 # Defaults:
 HIDEWARNERROR=0         # Bool: hide warnings and errors
-HIDESTDOUT=0            # Bool: hide stdout
-GARNETDEBUG=1           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
+HIDESTDOUT=1            # Bool: hide stdout
+GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
 NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per data VC
 LINKWIDTHBITS=32        # Width in bits for all links inside the network
 DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
-USE_ESCAPE_VC=0         # Bool: Use VC=0 as Escape VC. Requires NVCS>=2
-INJVNET=0               # Only inject in this vnet (0, 1 or 2).
+USE_ESCAPE_VC=0         # Bool: for ring; use VC=0 as Escape VC. Requires NVCS>=2
+INJVNET=-1               # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
-CONCENTRATION_FACTOR=4  # Number of cpu's per router, for FlattenedButterfly
-NCPUS=64                # Number of cpu's
-NDIRS=64                # Number of directory controllers, must <= NCPUS
-NROWS=2
-TOPO=FlattenedButterfly
+CONCENTRATION_FACTOR=1  # Number of cpu's per router
+NCPUS=32                # Number of cpu's
+NDIRS=32                # Number of directory controllers, must <= NCPUS
+NROWS=8
+TOPOLOGY=FlattenedButterfly
 IJRATE=0.99
-ROUTINGALGO=0
 SYNTH=uniform_random
-NCYCLES=500
+NCYCLES=5000
+ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
+                        # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
+                        #   0: Weight-based table (shortest path)
+                        #   1: XY (for Mesh)
+                        #   2: Random (custom)
+                        #   3: Adaptive (not implemented)
 
 # Send between specific router id's. -1: disable
 SENDER_ID=-1
@@ -57,10 +57,10 @@ if [ "$#" -gt 1 ]; then
     NROWS=$2
 fi
 if [ "$#" -gt 2 ]; then
-    TOPO=$3
+    CONCENTRATION_FACTOR=$3
 fi
 if [ "$#" -gt 3 ]; then
-    ROUTINGALGO=$4
+    TOPOLOGY=$4
 fi
 if [ "$#" -gt 4 ]; then
     IJRATE=$5
@@ -73,7 +73,7 @@ if [ "$#" -gt 6 ]; then
 fi
 
 # Suffix output dir name with routing algorithm
-case "$ROUTINGALGO" in
+case "$ROUTINGALGORITHM" in
     0) RALGNAME=weighted_table_routing ;;
     1) RALGNAME=mesh_xy_routing ;;
     2) RALGNAME=random_routing ;;
@@ -92,7 +92,7 @@ else
 fi
 
 
-OUTDIR="m5out/"$TOPO-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE-$RALGNAME
+OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE-$RALGNAME
 
 # Generate output dir name
 if [ -d $OUTDIR ]; then
@@ -146,19 +146,20 @@ else
     USE_ESCAPE_VC=""
 fi
 
-# Set environment variable for recognizing simulation type in gem5 .py-files
+# Set environment variable for recognizing simulation type in gem5 source files
 export GEM5SIMTYPE=GarnetStandalone
 
-RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS -d $OUTDIR configs/example/garnet_synth_traffic.py \
+RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS \
+-d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPUS \
 --num-dirs=$NCPUS \
---topology=$TOPO \
+--topology=$TOPOLOGY \
 --mesh-rows=$NROWS \
 --sim-cycles=$NCYCLES \
 --injectionrate=$IJRATE \
 --synthetic=$SYNTH \
---routing-algorithm=$ROUTINGALGO \
+--routing-algorithm=$ROUTINGALGORITHM \
 --link-width-bits=$LINKWIDTHBITS \
 --vcs-per-vnet=$NVCS \
 --buffers-per-data-vc=$NBUFFERS_PER_DATA_VC \
