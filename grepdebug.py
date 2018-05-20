@@ -8,7 +8,7 @@ import sys
 
 # Options
 in_file = "debug.txt" # default file name in case no args supplied
-greps = ["command line:", "vc_busy_counter"]
+greps = ["command line:", "vc_busy_counter", "send_allowed=1"]
 mixed_greps = False
 sorting = True
 

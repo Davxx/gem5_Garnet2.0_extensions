@@ -113,7 +113,8 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     unsigned int num_out_port;
     unsigned int num_vclass;
     unsigned int num_vchannels;
-    unsigned int num_buffers;
+    unsigned int num_ctrl_buffers;
+    unsigned int num_data_buffers;
 
     unsigned int flit_width;
     const char *input_port_buffer_model;
@@ -125,9 +126,9 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     double clk_tree_wire_width_mult;
 
     // Read the arguments sent from the python script
-    if (!PyArg_ParseTuple(args, "KIIIIII", &frequency, &num_in_port,
+    if (!PyArg_ParseTuple(args, "KIIIIIII", &frequency, &num_in_port,
                           &num_out_port, &num_vclass, &num_vchannels,
-                          &num_buffers, &flit_width)) {
+                          &num_ctrl_buffers, &num_data_buffers, &flit_width)) {
         Py_RETURN_NONE;
     }
 
@@ -138,7 +139,10 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     assert(flit_width != 0);
 
     vector<unsigned int> num_vchannels_vec(num_vclass, num_vchannels);
-    vector<unsigned int> num_buffers_vec(num_vclass, num_buffers);
+    vector<unsigned int> num_buffers_vec(num_vclass, num_ctrl_buffers);
+    if (num_vclass == 3)
+        num_buffers_vec[2] = num_data_buffers;
+    
     // DSENT outputs
     map<string, double> outputs;
 

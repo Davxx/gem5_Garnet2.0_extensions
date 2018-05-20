@@ -155,7 +155,7 @@ class Mesh_XY(SimpleTopology):
             assert(node.type == 'DMA_Controller')
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[0],
-                                     latency = link_latency))
+                                     latency=self.link_latency))
             self.link_count += 1
 
         network.ext_links = ext_links

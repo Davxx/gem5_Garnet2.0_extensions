@@ -7,6 +7,8 @@ from m5.objects import *
 
 from BaseTopology import SimpleTopology
 from TikzTopology import TikzTopology
+from TopologyToDSENT import TopologyToDSENT
+
 
 import numpy as np
 
@@ -56,6 +58,7 @@ class Line(SimpleTopology):
         concentration_factor = options.concentration_factor
         ncpus = options.num_cpus
         nrouters = ncpus / concentration_factor
+        options.mesh_rows = 1
         nrows = 1
 
         # First determine which nodes are cache cntrls vs. dirs vs. dma
@@ -96,7 +99,7 @@ class Line(SimpleTopology):
         if options.tikz:
             self.tikz_out = TikzTopology(m5.options.outdir, nrows, ncols)
 
-        # Create the routers in the mesh
+        # Create the routers on the Line
         self.routers = [Router(router_id=i, latency=router_latency) for i in range(nrouters)]
         network.routers = self.routers
 
@@ -128,11 +131,10 @@ class Line(SimpleTopology):
             assert(node.type == 'DMA_Controller')
             ext_links.append(ExtLink(link_id=self.link_count, ext_node=node,
                                      int_node=self.routers[0],
-                                     latency = link_latency))
+                                     latency=self.link_latency))
             self.link_count += 1
 
         network.ext_links = ext_links
-
 
         # Place routers consecutively on the Line
         self.writeTikz("    \\node[main node] (0) [above left=0cm] {0};")
@@ -153,3 +155,8 @@ class Line(SimpleTopology):
             self.tikz_out.close()
 
         network.int_links = self.int_links
+        
+        # Generate router.cfg file for DSENT
+        dsent = TopologyToDSENT(m5.options.outdir, options.injectionrate, self.link_count / 2,
+                                options.link_width_bits, options.vcs_per_vnet,
+                                options.buffers_per_control_vc, options.buffers_per_data_vc)
