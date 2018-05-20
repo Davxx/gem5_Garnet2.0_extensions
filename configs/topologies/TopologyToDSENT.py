@@ -60,26 +60,22 @@ EvaluateString                          = \\
     xbar_area       = $(Area>>Router->Crossbar:Active) + $(Area>>Router->Crossbar_Sel_DFF:Active) + $(Area>>Router->PipelineReg2_0:Active) * $(NumberBitsPerFlit) * $(NumberOutputPorts); \\
     sa_area         = $(Area>>Router->SwitchAllocator:Active); \\
     other_area      = $(Area>>Router->ClockTree:Active); \\
-    print "Buffer:"; \\
-    print "    Dynamic power: " buffer_dynamic; \\
-    print "    Leakage power: " buffer_leakage; \\
-    print "Crossbar:"; \\
-    print "    Dynamic power: " xbar_dynamic; \\
-    print "    Leakage power: " xbar_leakage; \\
-    print "Switch allocator:"; \\
-    print "    Dynamic power: " sa_dynamic; \\
-    print "    Leakage power: " sa_leakage; \\
-    print "Clock:"; \\
-    print "    Dynamic power: " clock_dynamic; \\
-    print "    Leakage power: " clock_leakage; \\
-    print "Total:"; \\
-    print "    Dynamic power: " total_dynamic; \\
-    print "    Leakage power: " $(NddPower>>Router:Leakage); \\
-    print "Area:"; \\
-    print "    Buffer:           " buf_area; \\
-    print "    Crossbar:         " xbar_area; \\
-    print "    Switch allocator: " sa_area; \\
-    print "    Other:            " other_area; \\
+    total_area      = 1.1 * (buf_area + xbar_area + sa_area + other_area); \\
+    print "Buffer/Dynamic power: " buffer_dynamic; \\
+    print "Buffer/Leakage power: " buffer_leakage; \\
+    print "Crossbar/Dynamic power: " xbar_dynamic; \\
+    print "Crossbar/Leakage power: " xbar_leakage; \\
+    print "Switch allocator/Dynamic power: " sa_dynamic; \\
+    print "Switch allocator/Leakage power: " sa_leakage; \\
+    print "Clock/Dynamic power: " clock_dynamic; \\
+    print "Clock/Leakage power: " clock_leakage; \\
+    print "Total/Dynamic power: " total_dynamic; \\
+    print "Total/Leakage power: " $(NddPower>>Router:Leakage); \\
+    print "Area/Buffer: " buf_area; \\
+    print "Area/Crossbar: " xbar_area; \\
+    print "Area/Switch allocator: " sa_area; \\
+    print "Area/Other: " other_area; \\
+    print "Area/Total: " total_area; \\
 
 # Technology file (see other models in tech/models)
 ElectricalTechModelFilename             = ext/dsent/tech/tech_models/Bulk45LVT.model
@@ -164,7 +160,6 @@ InjectionRate                           = {0}
 EvaluateString                          = \\
     link_dynamic    = $(Energy>>RepeatedLink:Send) * $(Frequency); \\
     link_static     = $(NddPower>>RepeatedLink:Leakage); \\
-    print "Link:"; \\
     print "    Dynamic power: " link_dynamic * $(InjectionRate); \\
     print "    Leakage power: " link_static; \\
 

@@ -159,4 +159,4 @@ class Line(SimpleTopology):
         # Generate router.cfg file for DSENT
         dsent = TopologyToDSENT(m5.options.outdir, options.injectionrate, self.link_count / 2,
                                 options.link_width_bits, options.vcs_per_vnet,
-                                options.buffers_per_control_vc, options.buffers_per_data_vc)
+                                options.buffers_per_ctrl_vc, options.buffers_per_data_vc)

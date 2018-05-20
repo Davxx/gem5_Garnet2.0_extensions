@@ -16,7 +16,7 @@
 
 # Defaults:
 HIDEWARNERROR=0         # Bool: hide warnings and errors
-HIDESTDOUT=0            # Bool: hide stdout
+HIDESTDOUT=1            # Bool: hide stdout
 GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
 NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
@@ -34,7 +34,7 @@ NROWS=8
 TOPOLOGY=FlattenedButterfly
 IJRATE=0.99
 SYNTH=uniform_random
-NCYCLES=1
+NCYCLES=500
 ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
                         #   0: Weight-based table (shortest path)
