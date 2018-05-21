@@ -16,7 +16,7 @@
 
 # Defaults:
 HIDEWARNERROR=0         # Bool: hide warnings and errors
-HIDESTDOUT=1            # Bool: hide stdout
+HIDESTDOUT=0            # Bool: hide stdout
 GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
 NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC

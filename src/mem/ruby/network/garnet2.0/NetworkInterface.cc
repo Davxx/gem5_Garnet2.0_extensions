@@ -343,10 +343,9 @@ NetworkInterface::flitisizeMessage(MsgPtr msg_ptr, int vnet)
         // this will return a free output virtual channel
         int vc = calculateVC(vnet);
 
-        if (vc == -1) {
-            printf("no free outvcs\n");
+        if (vc == -1)
             return false;
-        }
+
         MsgPtr new_msg_ptr = msg_ptr->clone();
         NodeID destID = dest_nodes[ctr];
 
@@ -417,13 +416,11 @@ NetworkInterface::calculateVC(int vnet)
         if (m_out_vc_state[vc]->isInState(
                     IDLE_, curCycle())) {
             vc_busy_counter[vnet] = 0;
-            printf("returned vc=%d\n", vc);
             return vc;
         }
     }
 
     vc_busy_counter[vnet] += 1;
-    printf("vc_busy_counter=%d for vnet=%d\n", vc_busy_counter[vnet], vnet);
     panic_if(vc_busy_counter[vnet] > m_deadlock_threshold,
         "%s: Possible network deadlock in vnet: %d at time: %llu \n",
         name(), vnet, curTick());

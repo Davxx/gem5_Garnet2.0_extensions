@@ -136,7 +136,6 @@ SwitchAllocator::arbitrate_inports()
                 // send_allowed conditions described in that function.
                 bool make_request =
                     send_allowed(inport, invc, outport, outvc);
-                printf("send_allowed=%d\n\n", (int)make_request);
 
                 if (make_request) {
                     m_input_arbiter_activity++;
@@ -296,24 +295,12 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
     // Check if ordering violated (in ordered vnet)
 
     int outvc = suggested_outvc;
-    flit *flit = m_input_unit[inport]->peekTopFlit(invc);
-    RouteInfo route = flit->get_route();
-    int nhops = route.hops_traversed;
-    NetworkLink *outlink = m_output_unit[outport]->get_outLink_Ref();
-    PortDirection inport_dirn = m_input_unit[inport]->get_direction();
-    PortDirection outport_dirn = m_input_unit[outport]->get_direction();
-    PortDirection out_outport_dirn = m_output_unit[outport]->get_direction();
-
-    int router_id = m_router->get_id();
     int vnet = get_vnet(invc);
     bool has_credit = false;
-
-    printf("flit p: %p, router id: %d, inport: %d=", flit, router_id, inport);
-    std::cout << m_router->getPortDirectionName(inport_dirn);
-    printf(", invc: %d, outport: %d=", invc, outport);
-    std::cout << m_router->getPortDirectionName(outport_dirn);
-    std::cout << ", out_outport_dirn=" << out_outport_dirn;
-    printf(", outvc: %d, vnetin: %d, vnetout: %d\n", outvc, vnet, get_vnet(outvc));
+    flit *flit = m_input_unit[inport]->peekTopFlit(invc);
+    RouteInfo route = flit->get_route();
+    PortDirection inport_dirn = m_input_unit[inport]->get_direction();
+    PortDirection outport_dirn = m_input_unit[outport]->get_direction();
     
     if (outvc == -1) {
         // needs outvc
@@ -330,20 +317,13 @@ SwitchAllocator::send_allowed(int inport, int invc, int outport,
     }
 
     // cannot send if no outvc or no credit.
-    if (outvc == -1 || !has_credit) {
-        printf("denied: outvc=%d, has_credit=%d\n", outvc, (int)has_credit);
+    if (outvc == -1 || !has_credit)
         return false;
-    }
-
-    printf("flit p: %p, hops: %d, src_router=%d, dest_router=%d\n", flit, flit->get_hops(),
-           route.src_router, route.dest_router);
 
     // Prohibit local VC transfers, i.e.: router_x.vc_i to router_x.vc_j | i!=j,
     // since this will induce deadlocks on a ring
     if (m_escapevc_enabled && inport_dirn == "Local" && invc != outvc)
         return false;
-
-    printf("allowed on outvc=%d\n", outvc);
 
     // protocol ordering check
     if ((m_router->get_net_ptr())->isVNetOrdered(vnet)) {
@@ -375,8 +355,6 @@ SwitchAllocator::vc_allocate(int outport, int inport, int invc)
 {
     flit *flit = m_input_unit[inport]->peekTopFlit(invc);
     RouteInfo route = flit->get_route();
-    printf("allocate flit p: %p, hops: %d, src_router=%d, dest_router=%d\n", flit, flit->get_hops(),
-       route.src_router, route.dest_router);
 
     // Select a free VC from the output port
     int outvc = m_output_unit[outport]->select_free_vc(get_vnet(invc), route);

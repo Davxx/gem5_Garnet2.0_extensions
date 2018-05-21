@@ -348,7 +348,7 @@ if main['GCC'] or main['CLANG']:
     # Enable -Wall and -Wextra and then disable the few warnings that
     # we consistently violate
     main.Append(CCFLAGS=['-Wall', '-Wundef', '-Wextra',
-                         '-Wno-sign-compare', '-Wno-unused-parameter', '-Wno-unused-variable'])
+                         '-Wno-sign-compare', '-Wno-unused-parameter'])
     # We always compile using C++11
     main.Append(CXXFLAGS=['-std=c++11'])
     if sys.platform.startswith('freebsd'):
@@ -366,8 +366,7 @@ if main['GCC'] or main['CLANG']:
     # want to allow (e.g., deprecation warnings).
     main.Append(CCFLAGS=['-Werror',
                          '-Wno-error=deprecated-declarations',
-                         '-Wno-error=deprecated',
-                         '-Wno-error=unused-variable'])
+                         '-Wno-error=deprecated'])
 else:
     print(termcap.Yellow + termcap.Bold + 'Error' + termcap.Normal, end=' ')
     print("Don't know what compiler options to use for your compiler.")

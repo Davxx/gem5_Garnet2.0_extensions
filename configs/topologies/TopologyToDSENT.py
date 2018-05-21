@@ -96,35 +96,40 @@ ClockTree->WireLayer                    = Global
 # wire width multiplier
 ClockTree->WireWidthMultiplier          = 1.0
 
-# Injection rate (# flits per cycle per port) (*)
-InjectionRate                           = 1.0
+# Injection rates (# flits per cycle per port) (*)
+BufInjectionRate                        = 1.0
+XbarInjectionRate                       = 1.0
+SAInjectionRate                         = 1.0
+
 # Evaluation string
 EvaluateString                          = \\
-    ejection_rate   = $(NumberInputPorts) * $(InjectionRate) / $(NumberOutputPorts); \\
-    buf_rd_dynamic  = $(Energy>>Router:ReadBuffer) * $(Frequency); \\
-    buf_wr_dynamic  = $(Energy>>Router:WriteBuffer) * $(Frequency); \\
-    buf_static      = $(NddPower>>Router->InputPort:Leakage) * $(NumberInputPorts) + ($(NddPower>>Router->PipelineReg0:Leakage) + $(NddPower>>Router->PipelineReg1:Leakage)) * $(NumberInputPorts) * $(NumberBitsPerFlit); \\
-    xbar_o_dynamic  = $(Energy>>Router:TraverseCrossbar->Multicast1) * $(Frequency); \\
-    xbar_static     = $(NddPower>>Router->Crossbar:Leakage) + $(NddPower>>Router->PipelineReg2_0:Leakage) * $(NumberOutputPorts) * $(NumberBitsPerFlit); \\
-    sa_o_dynamic    = ($(Energy>>Router:ArbitrateSwitch->ArbitrateStage1) + $(Energy>>Router:ArbitrateSwitch->ArbitrateStage2)) * $(Frequency); \\
-    sa_static       = $(NddPower>>Router->SwitchAllocator:Leakage); \\
-    clock_o_dynamic = $(Energy>>Router:DistributeClock) * $(Frequency); \\
-    clock_static    = $(NddPower>>Router->ClockTree:Leakage); \\
-    buffer_dynamic  = buf_wr_dynamic * $(InjectionRate) * $(NumberInputPorts) + buf_rd_dynamic * ejection_rate * $(NumberOutputPorts); \\
-    buffer_leakage  = buf_static; \\
-    xbar_dynamic    = xbar_o_dynamic * ejection_rate * $(NumberOutputPorts); \\
-    xbar_leakage    = xbar_static; \\
-    sa_dynamic      = sa_o_dynamic * ejection_rate * $(NumberOutputPorts); \\
-    sa_leakage      = sa_static; \\
-    clock_dynamic   = clock_o_dynamic; \\
-    clock_leakage   = clock_static; \\
-    total_dynamic   = buffer_dynamic + xbar_dynamic + sa_dynamic + clock_dynamic; \\
-    total_leakage   = buffer_leakage + xbar_leakage + sa_leakage + clock_leakage; \\
-    buf_area        = ($(Area>>Router->InputPort:Active) + ($(Area>>Router->PipelineReg0:Active) + $(Area>>Router->PipelineReg1:Active)) * $(NumberBitsPerFlit)) * $(NumberInputPorts); \\
-    xbar_area       = $(Area>>Router->Crossbar:Active) + $(Area>>Router->Crossbar_Sel_DFF:Active) + $(Area>>Router->PipelineReg2_0:Active) * $(NumberBitsPerFlit) * $(NumberOutputPorts); \\
-    sa_area         = $(Area>>Router->SwitchAllocator:Active); \\
-    other_area      = $(Area>>Router->ClockTree:Active); \\
-    total_area      = 1.1 * (buf_area + xbar_area + sa_area + other_area); \\
+    buf_ejection_rate  = $(NumberInputPorts) * $(BufInjectionRate) / $(NumberOutputPorts); \\
+    xbar_ejection_rate = $(NumberInputPorts) * $(XbarInjectionRate) / $(NumberOutputPorts); \\
+    sa_ejection_rate   = $(NumberInputPorts) * $(SAInjectionRate) / $(NumberOutputPorts); \\
+    buf_rd_dynamic     = $(Energy>>Router:ReadBuffer) * $(Frequency); \\
+    buf_wr_dynamic     = $(Energy>>Router:WriteBuffer) * $(Frequency); \\
+    buf_static         = $(NddPower>>Router->InputPort:Leakage) * $(NumberInputPorts) + ($(NddPower>>Router->PipelineReg0:Leakage) + $(NddPower>>Router->PipelineReg1:Leakage)) * $(NumberInputPorts) * $(NumberBitsPerFlit); \\
+    xbar_o_dynamic     = $(Energy>>Router:TraverseCrossbar->Multicast1) * $(Frequency); \\
+    xbar_static        = $(NddPower>>Router->Crossbar:Leakage) + $(NddPower>>Router->PipelineReg2_0:Leakage) * $(NumberOutputPorts) * $(NumberBitsPerFlit); \\
+    sa_o_dynamic       = ($(Energy>>Router:ArbitrateSwitch->ArbitrateStage1) + $(Energy>>Router:ArbitrateSwitch->ArbitrateStage2)) * $(Frequency); \\
+    sa_static          = $(NddPower>>Router->SwitchAllocator:Leakage); \\
+    clock_o_dynamic    = $(Energy>>Router:DistributeClock) * $(Frequency); \\
+    clock_static       = $(NddPower>>Router->ClockTree:Leakage); \\
+    buffer_dynamic     = buf_wr_dynamic * $(BufInjectionRate) * $(NumberInputPorts) + buf_rd_dynamic * buf_ejection_rate * $(NumberOutputPorts); \\
+    buffer_leakage     = buf_static; \\
+    xbar_dynamic       = xbar_o_dynamic * xbar_ejection_rate * $(NumberOutputPorts); \\
+    xbar_leakage       = xbar_static; \\
+    sa_dynamic         = sa_o_dynamic * sa_ejection_rate * $(NumberOutputPorts); \\
+    sa_leakage         = sa_static; \\
+    clock_dynamic      = clock_o_dynamic; \\
+    clock_leakage      = clock_static; \\
+    total_dynamic      = buffer_dynamic + xbar_dynamic + sa_dynamic + clock_dynamic; \\
+    total_leakage      = buffer_leakage + xbar_leakage + sa_leakage + clock_leakage; \\
+    buf_area           = ($(Area>>Router->InputPort:Active) + ($(Area>>Router->PipelineReg0:Active) + $(Area>>Router->PipelineReg1:Active)) * $(NumberBitsPerFlit)) * $(NumberInputPorts); \\
+    xbar_area          = $(Area>>Router->Crossbar:Active) + $(Area>>Router->Crossbar_Sel_DFF:Active) + $(Area>>Router->PipelineReg2_0:Active) * $(NumberBitsPerFlit) * $(NumberOutputPorts); \\
+    sa_area            = $(Area>>Router->SwitchAllocator:Active); \\
+    other_area         = $(Area>>Router->ClockTree:Active); \\
+    total_area         = 1.1 * (buf_area + xbar_area + sa_area + other_area); \\
     print "Buffer/Dynamic power: " buffer_dynamic; \\
     print "Buffer/Leakage power: " buffer_leakage; \\
     print "Crossbar/Dynamic power: " xbar_dynamic; \\
