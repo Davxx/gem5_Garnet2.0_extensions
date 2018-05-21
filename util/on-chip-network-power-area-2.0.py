@@ -88,13 +88,26 @@ def parseConfig(config_file):
     ni_flit_size_bits = 8 * config.getint("system.ruby.network",
                                           "ni_flit_size")
 
+    # Get num_cycles for four possible config.ini:[system.cpu????] formats
+    num_cycles = 0
+    if config.has_section("system.cpu0"):
+        num_cycles = config.getint("system.cpu0", "sim_cycles")
+    elif config.has_section("system.cpu00"):
+        num_cycles = config.getint("system.cpu00", "sim_cycles")
+    elif config.has_section("system.cpu000"):
+        num_cycles = config.getint("system.cpu000", "sim_cycles")
+    elif config.has_section("system.cpu0000"):
+        num_cycles = config.getint("system.cpu0000", "sim_cycles")
+    
+    assert(num_cycles > 0)
+
     routers = config.get("system.ruby.network", "routers").split()
     int_links = config.get("system.ruby.network", "int_links").split()
     ext_links = config.get("system.ruby.network", "ext_links").split()
 
     return (config, number_of_virtual_networks, vcs_per_vnet,
             buffers_per_data_vc, buffers_per_control_vc, ni_flit_size_bits,
-            routers, int_links, ext_links)
+            num_cycles, routers, int_links, ext_links)
 
 ## Get clock for the given object
 def getClock(obj, config):
@@ -123,7 +136,26 @@ def getResultKey(s):
             return i
     return -1
 
-## Compute the power and area used by the given router
+## Compute the power consumed by the given int_links
+def computeIntLinkPower(int_links, config, num_links=1e9):
+    power = None
+    for (i, link) in enumerate(int_links):
+        if i + 1 > num_links:
+            break
+
+        frequency = getClock(link + ".network_link", config)
+
+        if num_links == 1:
+            print("\nSingle link power:")
+        else:
+            print("\n%s.network_link power: " % link)
+        
+        power = dsent.computeLinkPower(frequency)
+
+    # Return latest result
+    return power
+
+## Compute the power and area used for all routers
 def computeRouterPowerAndArea(routers, stats_file, config, int_links, ext_links,
                               number_of_virtual_networks, vcs_per_vnet,
                               buffers_per_data_vc, buffers_per_control_vc,
@@ -147,10 +179,17 @@ def computeRouterPowerAndArea(routers, stats_file, config, int_links, ext_links,
             if config.get(ext_link, "int_node") == router:
                nports += 1
 
-        # Print results for this router
+        # All ports are bidirectional
+        nports /= 2
+
+        # Calculate injection rate (number of flits per cycle per port) for
+        # this router, based on stats
+        injection_rate = 2
+
+        # Print results, overwriting relevant parameters, for this router
         print("\n%s:" % router)
         dsent_output = dsent.computeRouterPowerAndArea(
-                                frequency, nports / 2, nports / 2,
+                                frequency, nports, nports, injection_rate,
                                 number_of_virtual_networks, vcs_per_vnet,
                                 buffers_per_control_vc, buffers_per_data_vc,
                                 ni_flit_size_bits)
@@ -167,62 +206,96 @@ def computeRouterPowerAndArea(routers, stats_file, config, int_links, ext_links,
     for k, v in result_sum.iteritems():
         result_average[k] = v / float(len(routers))
 
-    # Print sum and average
+    # Generate output strings in the correct order
     for k, v in result_sum.iteritems():
         sum_strings[getResultKey(k)] = str(k) + str(v)
     for k, v in result_average.iteritems():
         avg_strings[getResultKey(k)] = str(k) + str(v)
 
+    # Print sum and average
     print("\nAverages for all %d routers:" % len(routers))
     print("\n".join(avg_strings))
     print("\nSum totals for all %d routers:" % len(routers))
     print("\n".join(sum_strings))
 
-## Compute the power consumed by the given int_links
-def computeIntLinkPower(int_links, stats_file, config, sim_seconds):
-    for link in int_links:
-        frequency = getClock(link + ".network_link", config)
-        print("\n%s.network_link power: " % link)
-        power = dsent.computeLinkPower(frequency)
-
 ## Compute the power consumed by the given ext_links
-def computeExtLinkPower(ext_links, stats_file, config, sim_seconds):
+def computeExtLinkPower(ext_links, config, num_links=1e9):
+    power = None
+    i = 1
     for link in ext_links:
+        if i > num_links:
+            break
+
         frequency = getClock(link + ".network_links0", config)
-        print("\n%s.network_links0 power: " % link)
+
+        if num_links == 1:
+            print("\nSingle link power:")
+        else:
+            print("\n%s.network_links0 power: " % link)
+
         power = dsent.computeLinkPower(frequency)
+        i += 1
+
+        if i > num_links:
+            break
 
         frequency = getClock(link + ".network_links1", config)
         print("\n%s.network_links1 power: " % link)
+
         power = dsent.computeLinkPower(frequency)
+        i += 1
+
+    # Return latest result
+    return power
+
+## Compute total link power consumption, assuming that each link has a power
+## model equal to single_link_power
+def computeTotalLinkPower(single_link_power, num_cycles, int_links, ext_links, stats_file):
+    num_int_links = len(int_links)
+    num_ext_links = len(ext_links)
+    total_num_links = num_int_links + num_ext_links
+    single_dynamic = 0.0
+    single_leakage = 0.0
+
+    # Get power consumption for a single link.
+    # Power has already been weighted for the set injection rate by DSENT
+    for k, v in single_link_power.iteritems():
+        if "Dynamic" in k:
+            single_dynamic = v
+        elif "Leakage" in k:
+            single_leakage = v
+    print single_dynamic
+    print single_leakage
+    print num_cycles
+    print("\nTotal number of links: %d" % total_num_links)
+    print("Total link power for %d bidirectional int_links and %d bidirectional ext_links:"
+          % (len(int_links) / 2, len(ext_links) / 2))
+
+    flits_injected = getStatsForString(stats_file, "system.ruby.network.flits_injected::total")
+    ext_in_link_utilization = getStatsForString(stats_file, "system.ruby.network.ext_in_link_utilization")
+    ext_out_link_utilization = getStatsForString(stats_file, "system.ruby.network.ext_out_link_utilization")
+    int_link_utilization = getStatsForString(stats_file, "system.ruby.network.int_link_utilization")
+    ext_link_utilization = ext_in_link_utilization + ext_out_link_utilization
+
+    flits_per_cycle = flits_injected / float(num_cycles)
+    print flits_injected, flits_per_cycle
+
+## Parse stats.txt for the specified key and return the associated value as float
+def getStatsForString(stats_file, key):
+    with open(stats_file, "rt") as f:
+        for line in f:
+            if key in line:
+                split = line.split()
+                return float(split[-1])
+    return 0
 
 ## Parse gem5 stats.txt file
 def parseStats(stats_file, config, router_config_file, link_config_file,
                routers, int_links, ext_links, number_of_virtual_networks,
                vcs_per_vnet, buffers_per_data_vc, buffers_per_control_vc,
-               ni_flit_size_bits):
+               ni_flit_size_bits, num_cycles):
 
-    # Open the stats.txt file and parse it to for the required numbers
-    # and the number of routers.
-    try:
-        stats_handle = open(stats_file, 'r')
-        stats_handle.close()
-    except IOError:
-        print("Failed to open ", stats_file, " for reading")
-        exit(-1)
-
-    # Now parse the stats
-    pattern = "sim_seconds"
-    lines = string.split(subprocess.check_output(
-                ["grep", pattern, stats_file]), '\n', -1)
-    assert len(lines) >= 1
-
-    ## Assume that the first line is the one required
-    [l1,l2,l3] = lines[0].partition(" ")
-    l4 = l3.strip().partition(" ")
-    simulation_length_in_seconds = float(l4[0])
-
-    # Initialize DSENT with router configuration file
+    # Initialize DSENT with shared router configuration file
     dsent.initialize(router_config_file)
 
     # Compute the power consumed by the routers
@@ -234,23 +307,31 @@ def parseStats(stats_file, config, router_config_file, link_config_file,
     # Finalize DSENT
     dsent.finalize()
 
-    # Initialize DSENT with link configuration file
+    '''# Initialize DSENT with link configuration file
     dsent.initialize(link_config_file)
 
-    # Compute the power consumed by the links
-    computeIntLinkPower(int_links, stats_file, config, simulation_length_in_seconds)
-    computeExtLinkPower(ext_links, stats_file, config, simulation_length_in_seconds)
+    # Compute the power consumed by a single link, since all links
+    # currently have the same power model
+    single_link_power = dict(computeIntLinkPower(int_links, config, num_links=1))
+    
+    # Compute total link power consumption
+    computeTotalLinkPower(single_link_power, num_cycles, int_links, ext_links, stats_file)
 
     # Finalize DSENT
-    dsent.finalize()
+    dsent.finalize()'''
+
 
 # This script parses the config.ini and the stats.txt from a run and
 # generates the power and the area of the on-chip network using DSENT
 def main():
     if len(sys.argv) < 2:
-        print("Usage: ", sys.argv[0], " <simulation directory> " \
-              "<router config file> <link config file>")
-        exit(-1)
+        print("Usage: %s <simulation directory> " \
+              "<router config file> <link config file>" % sys.argv[0])
+        print("If unspecified, <router config file> will default to " \
+              "<simulation directory>/router.cfg and")
+        print("<link config file> will default to " \
+              "<simulation directory>/electrical-link.cfg")
+        exit(2)
 
     print("WARNING: configuration files for DSENT and McPAT are separate. " \
           "Changes made to one are not reflected in the other.")
@@ -259,7 +340,7 @@ def main():
     stats_str = os.path.join(sys.argv[1], "stats.txt")
 
     (config, number_of_virtual_networks, vcs_per_vnet, buffers_per_data_vc,
-     buffers_per_control_vc, ni_flit_size_bits, routers, int_links,
+     buffers_per_control_vc, ni_flit_size_bits, num_cycles, routers, int_links,
      ext_links) = parseConfig(cfg_str)
 
     router_cfg = os.path.join(sys.argv[1], "router.cfg")
@@ -272,7 +353,7 @@ def main():
 
     parseStats(stats_str, config, router_cfg, link_cfg, routers, int_links, ext_links,
                number_of_virtual_networks, vcs_per_vnet, buffers_per_data_vc,
-               buffers_per_control_vc, ni_flit_size_bits)
+               buffers_per_control_vc, ni_flit_size_bits, num_cycles)
 
 if __name__ == "__main__":
     main()

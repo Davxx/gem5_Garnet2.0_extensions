@@ -35,6 +35,7 @@ from m5.objects import *
 
 from BaseTopology import SimpleTopology
 from TikzTopology import TikzTopology
+from TopologyToDSENT import TopologyToDSENT
 
 class Mesh_XY(SimpleTopology):
     # Creates a generic Mesh assuming an equal number of cache
@@ -208,3 +209,8 @@ class Mesh_XY(SimpleTopology):
             self.tikz_out.close()
 
         network.int_links = self.int_links
+        
+        # Generate router.cfg and electrical-link.cfg for DSENT
+        dsent = TopologyToDSENT(m5.options.outdir, options.link_width_bits, 
+                                options.vcs_per_vnet, options.buffers_per_ctrl_vc,
+                                options.buffers_per_data_vc)

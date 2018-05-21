@@ -8,7 +8,7 @@ import subprocess
 # If imagemagick is installed, the topology is written to 'sim_output_directory/topology.png'
 
 class TopologyToDSENT():
-    def __init__(self, outdir, ijrate, nlinks, linkbits, nvcs, ncontrolbuffers, ndatabuffers):
+    def __init__(self, outdir, linkbits, nvcs, ncontrolbuffers, ndatabuffers):
         # Use different base names for texname and pngname
         routercfg = "router.cfg"
         linkcfg = "electrical-link.cfg"
@@ -29,11 +29,75 @@ QueryString                             = \\
     Energy>>Router:DistributeClock@0 \\
     NddPower>>Router:Leakage@1 \\
     Area>>Router:Active@1 \\
+# Technology file (see other models in tech/models)
+ElectricalTechModelFilename             = ext/dsent/tech/tech_models/Bulk45LVT.model
 
+###############################################################################
+# Timing optimization
+###############################################################################
 
-# Injection rate (# flits per cycle per port), assuming that the router is not
-# saturated
-InjectionRate                           = {0}
+# True if want to perform timing optimization; otherwise, false.
+IsPerformTimingOptimization             = true
+# Nets that the timing optimizer starts from
+TimingOptimization->StartNetNames       = [*]
+# Operating frequency (Hz)
+Frequency                               = 1.0e9
+
+###############################################################################
+# Model specifications
+#
+# Variables marked (*) will be overwritten by on-chip-network-power-area-2.0.py
+###############################################################################
+
+# Number of input ports (*)
+NumberInputPorts                        = 1
+# Number of output ports (*)
+NumberOutputPorts                       = 1
+# Flit width (bit)
+NumberBitsPerFlit                       = {0}
+
+# In this example, we define 2 virtual networks (message classes), VN1 and VN2. 
+#                           VN1 VN2
+# Number of VCs              2   3
+# Number of buffers / VC     4   5
+#
+# So in total, there are (2 * 4) + (3 * 5) = 23 flit buffers
+#
+# Number of virtual networks (number of message classes)
+NumberVirtualNetworks                   = 3
+# Number of virtual channels per virtual network
+NumberVirtualChannelsPerVirtualNetwork  = [{1}, {1}, {1}]
+# Number of buffers per virtual channel
+NumberBuffersPerVirtualChannel          = [{2}, {2}, {3}]
+
+# InputPort 
+# ---------
+# buffer model
+InputPort->BufferModel                  = DFFRAM
+
+# Crossbar
+# --------
+# crossbar model
+CrossbarModel                           = MultiplexerCrossbar
+
+# Switch allocator
+# ----------------
+# arbiter model
+SwitchAllocator->ArbiterModel           = MatrixArbiter
+
+# Clock tree
+# ----------
+# clock tree model
+ClockTreeModel                          = BroadcastHTree
+# number of levels
+ClockTree->NumberLevels                 = 5
+# wire layer
+ClockTree->WireLayer                    = Global
+# wire width multiplier
+ClockTree->WireWidthMultiplier          = 1.0
+
+# Injection rate (# flits per cycle per port) (*)
+InjectionRate                           = 1.0
 # Evaluation string
 EvaluateString                          = \\
     ejection_rate   = $(NumberInputPorts) * $(InjectionRate) / $(NumberOutputPorts); \\
@@ -76,72 +140,7 @@ EvaluateString                          = \\
     print "Area/Switch allocator: " sa_area; \\
     print "Area/Other: " other_area; \\
     print "Area/Total: " total_area; \\
-
-# Technology file (see other models in tech/models)
-ElectricalTechModelFilename             = ext/dsent/tech/tech_models/Bulk45LVT.model
-
-###############################################################################
-# Timing optimization
-###############################################################################
-
-# True if want to perform timing optimization; otherwise, false.
-IsPerformTimingOptimization             = true
-# Nets that the timing optimizer starts from
-TimingOptimization->StartNetNames       = [*]
-# Operating frequency (Hz)
-Frequency                               = 1.0e9
-
-###############################################################################
-# Model specifications
-###############################################################################
-
-# Number of input ports
-NumberInputPorts                        = {1}
-# Number of output ports
-NumberOutputPorts                       = {1}
-# Flit width (bit)
-NumberBitsPerFlit                       = {2}
-
-# In this example, we define 2 virtual networks (message classes), VN1 and VN2. 
-#                           VN1 VN2
-# Number of VCs              2   3
-# Number of buffers / VC     4   5
-#
-# So in total, there are (2 * 4) + (3 * 5) = 23 flit buffers
-#
-# Number of virtual networks (number of message classes)
-NumberVirtualNetworks                   = 3
-# Number of virtual channels per virtual network
-NumberVirtualChannelsPerVirtualNetwork  = [{3}, {3}, {3}]
-# Number of buffers per virtual channel
-NumberBuffersPerVirtualChannel          = [{4}, {4}, {5}]
-
-# InputPort 
-# ---------
-# buffer model
-InputPort->BufferModel                  = DFFRAM
-
-# Crossbar
-# --------
-# crossbar model
-CrossbarModel                           = MultiplexerCrossbar
-
-# Switch allocator
-# ----------------
-# arbiter model
-SwitchAllocator->ArbiterModel           = MatrixArbiter
-
-# Clock tree
-# ----------
-# clock tree model
-ClockTreeModel                          = BroadcastHTree
-# number of levels
-ClockTree->NumberLevels                 = 5
-# wire layer
-ClockTree->WireLayer                    = Global
-# wire width multiplier
-ClockTree->WireWidthMultiplier          = 1.0
-""".format(ijrate, nlinks, linkbits, nvcs, ncontrolbuffers, ndatabuffers))
+""".format(linkbits, nvcs, ncontrolbuffers, ndatabuffers))
 
             with open(os.path.join(outdir, linkcfg), "w") as linkfile:
                 linkfile.write("""
@@ -154,8 +153,8 @@ QueryString                             = \\
     NddPower>>RepeatedLink:Leakage@0 \\
     Area>>RepeatedLink:Active@0 \\
 
-# Injection rate
-InjectionRate                           = {0}
+# Injection rate - will be overwritten by on-chip-network-power-area-2.0.py
+InjectionRate                           = 1
 # Evaluation string
 EvaluateString                          = \\
     link_dynamic    = $(Energy>>RepeatedLink:Send) * $(Frequency); \\
@@ -187,7 +186,7 @@ Frequency                               = 1e9
 ###############################################################################
 
 # Data width of the repeated link/bus
-NumberBits                              = {1}
+NumberBits                              = {0}
 # Wire layer
 WireLayer                               = Global
 # Wire width multiplier
@@ -199,6 +198,6 @@ WireSpacingMultiplier                   = 1.0
 WireLength                              = 1e-3
 # Delay of the wire (may not be 1.0 / Frequency)
 Delay                                   = 1e-9
-""".format(ijrate, linkbits))
+""".format(linkbits))
         except IOError:
             return None

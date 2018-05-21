@@ -32,7 +32,7 @@ NDIRS=-1                # Number of directory controllers, must <= NCPUS.
                         #   Set to -1 to equal NCPUS
 NROWS=8
 TOPOLOGY=FlattenedButterfly
-IJRATE=0.99
+IJRATE=0.8
 SYNTH=uniform_random
 NCYCLES=500
 ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
@@ -208,6 +208,11 @@ if [ $GARNETDEBUG -eq 1 ]; then
 fi
 if [ $EXITCODE -eq 0 ]; then
     python grepnetworkstats.py $OUTDIR
+    
+    # Calculate power and area with DSENT
+    DSENT_OUT=$OUTDIR/dsent_out.txt
+    echo "Writing DSENT power and area model to: $DSENT_OUT"
+    python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
 else
     rmdir $OUTDIR &> /dev/null
 fi

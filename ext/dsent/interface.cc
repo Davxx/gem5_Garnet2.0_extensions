@@ -111,6 +111,7 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     uint64_t frequency;
     unsigned int num_in_port;
     unsigned int num_out_port;
+    double injection_rate;
     unsigned int num_vclass;
     unsigned int num_vchannels;
     unsigned int num_ctrl_buffers;
@@ -126,8 +127,8 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     double clk_tree_wire_width_mult;
 
     // Read the arguments sent from the python script
-    if (!PyArg_ParseTuple(args, "KIIIIIII", &frequency, &num_in_port,
-                          &num_out_port, &num_vclass, &num_vchannels,
+    if (!PyArg_ParseTuple(args, "KIIdIIIII", &frequency, &num_in_port,
+                          &num_out_port, &injection_rate, &num_vclass, &num_vchannels,
                           &num_ctrl_buffers, &num_data_buffers, &flit_width)) {
         Py_RETURN_NONE;
     }
@@ -135,6 +136,7 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     assert(frequency > 0.0);
     assert(num_in_port != 0);
     assert(num_out_port != 0);
+    assert(injection_rate != 0.0);
     assert(num_vclass != 0);
     assert(flit_width != 0);
 
@@ -142,6 +144,8 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     vector<unsigned int> num_buffers_vec(num_vclass, num_ctrl_buffers);
     if (num_vclass == 3)
         num_buffers_vec[2] = num_data_buffers;
+    printf("vchannels: %d %d %d\n", (int)num_vchannels_vec[0], (int)num_vchannels_vec[1], (int)num_vchannels_vec[2]);
+    printf("buffers: %d %d %d\n", (int)num_buffers_vec[0], (int)num_buffers_vec[1], (int)num_buffers_vec[2]);
     
     // DSENT outputs
     map<string, double> outputs;
@@ -149,6 +153,7 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     params["Frequency"] = String(frequency);
     params["NumberInputPorts"] = String(num_in_port);
     params["NumberOutputPorts"] = String(num_out_port);
+    params["InjectionRate"] = String(injection_rate);
     params["NumberVirtualNetworks"] = String(num_vclass);
     params["NumberVirtualChannelsPerVirtualNetwork"] =
         vectorToString<unsigned int>(num_vchannels_vec);
