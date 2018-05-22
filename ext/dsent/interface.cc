@@ -108,7 +108,7 @@ dsent_finalize(PyObject *self, PyObject *args)
 static PyObject *
 dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
 {
-    uint64_t frequency;
+    double frequency;
     unsigned int num_in_port;
     unsigned int num_out_port;
     double buf_injrate;
@@ -129,7 +129,7 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     double clk_tree_wire_width_mult;
 
     // Read the arguments sent from the python script
-    if (!PyArg_ParseTuple(args, "KIIdddIIIII", &frequency,
+    if (!PyArg_ParseTuple(args, "dIIdddIIIII", &frequency,
                           &num_in_port, &num_out_port, 
                           &buf_injrate, &xbar_injrate, &sa_injrate,
                           &num_vclass, &num_vchannels,
@@ -138,13 +138,13 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     }
 
     assert(frequency > 0.0);
-    assert(num_in_port != 0);
-    assert(num_out_port != 0);
-    assert(buf_injrate != 0.0);
-    assert(xbar_injrate != 0.0);
-    assert(sa_injrate != 0.0);
-    assert(num_vclass != 0);
-    assert(flit_width != 0);
+    assert(num_in_port > 0);
+    assert(num_out_port > 0);
+    assert(buf_injrate > 0.0);
+    assert(xbar_injrate > 0.0);
+    assert(sa_injrate > 0.0);
+    assert(num_vclass > 0);
+    assert(flit_width > 0);
 
     vector<unsigned int> num_vchannels_vec(num_vclass, num_vchannels);
 
@@ -195,13 +195,15 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
 static PyObject *
 dsent_computeLinkPower(PyObject *self, PyObject *args)
 {
-    uint64_t frequency;
+    double frequency;
     double injrate;
 
     // Read the arguments sent from the python script
-    if (!PyArg_ParseTuple(args, "Kd", &frequency, &injrate)) {
+    if (!PyArg_ParseTuple(args, "dd", &frequency, &injrate)) {
         Py_RETURN_NONE;
     }
+
+    assert(injrate > 0.0);
 
     // DSENT outputs
     map<string, double> outputs;

@@ -171,7 +171,7 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPUS \
---num-dirs=$NDIRS \
+--num-dirs=4 \
 --topology=$TOPOLOGY \
 --mesh-rows=$NROWS \
 --sim-cycles=$NCYCLES \
