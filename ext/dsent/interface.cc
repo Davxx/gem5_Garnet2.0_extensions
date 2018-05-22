@@ -23,6 +23,8 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Modified by: David Smelt
  */
 
 #include <Python.h>
@@ -55,12 +57,12 @@ static PyMethodDef DSENTMethods[] = {
      "finalize dsent by dstroying the config object"},
 
     {"computeRouterPowerAndArea", dsent_computeRouterPowerAndArea,
-     METH_VARARGS, "compute quantities related power consumption of a router"},
+     METH_O, "compute quantities related power consumption of a router"},
 
-    {"computeLinkPower", dsent_computeLinkPower, METH_VARARGS,
+    {"computeLinkPower", dsent_computeLinkPower, METH_O,
      "compute quantities related power consumption of a link"},
 
-    {NULL, NULL, 0, NULL}
+    {NULL, NULL, NULL, NULL}
 };
 
 
@@ -106,9 +108,10 @@ dsent_finalize(PyObject *self, PyObject *args)
 
 
 static PyObject *
-dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
+dsent_computeRouterPowerAndArea(PyObject *self, PyObject *arg)
 {
-    double frequency;
+    uint64_t frequency = PyLong_AsLongLong(arg);
+/*
     unsigned int num_in_port;
     unsigned int num_out_port;
     double buf_injrate;
@@ -118,8 +121,8 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     unsigned int num_vchannels;
     unsigned int num_ctrl_buffers;
     unsigned int num_data_buffers;
-
     unsigned int flit_width;
+
     const char *input_port_buffer_model;
     const char *crossbar_model;
     const char *sa_arbiter_model;
@@ -127,20 +130,20 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
     unsigned int clk_tree_num_levels;
     const char *clk_tree_wire_layer;
     double clk_tree_wire_width_mult;
+*/
 
-    // Read the arguments sent from the python script
-    if (!PyArg_ParseTuple(args, "dIIdddIIIII", &frequency,
-                          &num_in_port, &num_out_port, 
+    
+    /* // Read the arguments sent from the python script
+    if (!PyArg_ParseTuple(args, "ddddIIIII", &frequency,
                           &buf_injrate, &xbar_injrate, &sa_injrate,
                           &num_vclass, &num_vchannels,
                           &num_ctrl_buffers, &num_data_buffers, &flit_width)) {
+    if (!PyArg_ParseTuple(args, "d", &frequency)) {
         Py_RETURN_NONE;
-    }
+    }*/
 
-    assert(frequency > 0.0);
-    assert(num_in_port > 0);
-    assert(num_out_port > 0);
-    assert(buf_injrate > 0.0);
+    assert(frequency > 0);
+    /*assert(buf_injrate > 0.0);
     assert(xbar_injrate > 0.0);
     assert(sa_injrate > 0.0);
     assert(num_vclass > 0);
@@ -153,15 +156,13 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
 
     // set vnet 2 buffers to num_data_buffers
     if (num_vclass == 3)
-        num_buffers_vec[2] = num_data_buffers;
+        num_buffers_vec[2] = num_data_buffers;*/
     
     // DSENT outputs
     map<string, double> outputs;
 
     params["Frequency"] = String(frequency);
-    params["NumberInputPorts"] = String(num_in_port);
-    params["NumberOutputPorts"] = String(num_out_port);
-    params["BufInjectionRate"] = String(buf_injrate);
+    /*params["BufInjectionRate"] = String(buf_injrate);
     params["XbarInjectionRate"] = String(xbar_injrate);
     params["SAInjectionRate"] = String(sa_injrate);
     params["NumberVirtualNetworks"] = String(num_vclass);
@@ -169,7 +170,7 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
         vectorToString<unsigned int>(num_vchannels_vec);
     params["NumberBuffersPerVirtualChannel"] =
         vectorToString<unsigned int>(num_buffers_vec);
-    params["NumberBitsPerFlit"] = String(flit_width);
+    params["NumberBitsPerFlit"] = String(flit_width);*/
 
     // Run DSENT
     DSENT::run(params, ms_model, outputs);
@@ -193,22 +194,22 @@ dsent_computeRouterPowerAndArea(PyObject *self, PyObject *args)
 
 
 static PyObject *
-dsent_computeLinkPower(PyObject *self, PyObject *args)
+dsent_computeLinkPower(PyObject *self, PyObject *arg)
 {
-    double frequency;
-    double injrate;
+    uint64_t frequency = PyLong_AsLongLong(arg);
 
-    // Read the arguments sent from the python script
+    /* // Read the arguments sent from the python script
     if (!PyArg_ParseTuple(args, "dd", &frequency, &injrate)) {
         Py_RETURN_NONE;
     }
 
-    assert(injrate > 0.0);
+    assert(injrate > 0.0);*/
+    assert(frequency > 0);
 
     // DSENT outputs
     map<string, double> outputs;
     params["Frequency"] = String(frequency);
-    params["InjectionRate"] = String(injrate);
+    /*params["InjectionRate"] = String(injrate);*/
 
     // Run DSENT
     DSENT::run(params, ms_model, outputs);

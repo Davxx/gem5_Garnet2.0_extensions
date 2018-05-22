@@ -27,11 +27,11 @@ INJVNET=0               # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
 CONCENTRATION_FACTOR=1  # Number of cpu's per router
-NCPUS=32                # Number of cpu's
+NCPUS=16                # Number of cpu's
 NDIRS=-1                # Number of directory controllers, must <= NCPUS.
                         #   Set to -1 to equal NCPUS
-NROWS=8
-TOPOLOGY=FlattenedButterfly
+NROWS=4
+TOPOLOGY=Mesh_XY
 IJRATE=0.8
 SYNTH=uniform_random
 NCYCLES=500
@@ -116,7 +116,8 @@ case "$ROUTINGALGORITHM" in
     *) RALGNAME=unknown_routing ;;
 esac
 
-OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE-$RALGNAME
+#OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE"injrate"-$RALGNAME-$NCYCLES"cycles"
+OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE"injrate"-$NCYCLES"cycles"
 
 # Generate output dir name
 if [ -d $OUTDIR ]; then
@@ -171,7 +172,7 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPUS \
---num-dirs=4 \
+--num-dirs=$NDIRS \
 --topology=$TOPOLOGY \
 --mesh-rows=$NROWS \
 --sim-cycles=$NCYCLES \

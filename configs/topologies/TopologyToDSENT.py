@@ -49,9 +49,9 @@ Frequency                               = 1.0e9
 # Variables marked (*) will be overwritten by on-chip-network-power-area-2.0.py
 ###############################################################################
 
-# Number of input ports (*)
+# Number of int_link ports (*)
 NumberInputPorts                        = 1
-# Number of output ports (*)
+# Number of ext_link ports (*)
 NumberOutputPorts                       = 1
 # Flit width (bit)
 NumberBitsPerFlit                       = {0}
@@ -138,13 +138,13 @@ EvaluateString                          = \\
     print "Switch allocator/Leakage power: " sa_leakage; \\
     print "Clock/Dynamic power: " clock_dynamic; \\
     print "Clock/Leakage power: " clock_leakage; \\
-    print "Total/Dynamic power: " total_dynamic; \\
-    print "Total/Leakage power: " $(NddPower>>Router:Leakage); \\
     print "Area/Buffer: " buf_area; \\
     print "Area/Crossbar: " xbar_area; \\
     print "Area/Switch allocator: " sa_area; \\
     print "Area/Other: " other_area; \\
     print "Area/Total: " total_area; \\
+    print "Total/Dynamic power: " total_dynamic; \\
+    print "Total/Leakage power: " $(NddPower>>Router:Leakage); \\
 """.format(linkbits, nvcs, ncontrolbuffers, ndatabuffers))
 
             with open(os.path.join(outdir, linkcfg), "w") as linkfile:
@@ -200,9 +200,9 @@ WireWidthMultiplier                     = 1.0
 WireSpacingMultiplier                   = 1.0
 
 # Wire length (m) - will be overwritten by on-chip-network-power-area-2.0.py
-WireLength                              = 2e-3
+WireLength                              = 1e-3
 # Delay of the wire (may not be 1.0 / Frequency)
-Delay                                   = 5e-10
+Delay                                   = 2e-9
 """.format(linkbits))
         except IOError:
             return None
