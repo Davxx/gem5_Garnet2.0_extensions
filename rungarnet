@@ -32,9 +32,9 @@ NDIRS=-1                # Number of directory controllers, must <= NCPUS.
                         #   Set to -1 to equal NCPUS
 NROWS=4
 TOPOLOGY=Mesh_XY
-IJRATE=0.8
+INJRATE=0.4
 SYNTH=uniform_random
-NCYCLES=500
+NCYCLES=5000
 ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
                         #   0: Weight-based table (shortest path)
@@ -64,7 +64,7 @@ if [ "$#" -gt 3 ]; then
     TOPOLOGY=$4
 fi
 if [ "$#" -gt 4 ]; then
-    IJRATE=$5
+    INJRATE=$5
 fi
 if [ "$#" -gt 5 ]; then
     SYNTH=$6
@@ -116,8 +116,8 @@ case "$ROUTINGALGORITHM" in
     *) RALGNAME=unknown_routing ;;
 esac
 
-#OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE"injrate"-$RALGNAME-$NCYCLES"cycles"
-OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$IJRATE"injrate"-$NCYCLES"cycles"
+OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$INJRATE"injrate"-$NCYCLES"cycles"
+LATENCY_FILE="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$NCYCLES"cycles-latency.txt"
 
 # Generate output dir name
 if [ -d $OUTDIR ]; then
@@ -175,7 +175,7 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 --topology=$TOPOLOGY \
 --mesh-rows=$NROWS \
 --sim-cycles=$NCYCLES \
---injectionrate=$IJRATE \
+--injectionrate=$INJRATE \
 --synthetic=$SYNTH \
 --routing-algorithm=$ROUTINGALGORITHM \
 --link-width-bits=$LINKWIDTHBITS \
@@ -213,6 +213,9 @@ if [ $EXITCODE -eq 0 ]; then
     DSENT_OUT=$OUTDIR/dsent_out.txt
     echo "Writing DSENT power and area model to: $DSENT_OUT"
     python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
+    
+    # Plot latency
+    python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
 else
     rmdir $OUTDIR &> /dev/null
 fi

@@ -3,6 +3,6 @@ for ((k=20;k<80;k+=5))
 do
     i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
     i="0"$i
-    ./rungarnet 16 4 1 Mesh_XY $i uniform_random 15000
+    ./rungarnet 16 2 2 Mesh_XY $i uniform_random 15000
 done
 
