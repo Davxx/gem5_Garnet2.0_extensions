@@ -369,8 +369,6 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
 
     for router in routers:
         frequency = getClock(router, config)
-        if router == "system.ruby.network.routers09":
-            break
 
         # Count number of ports to int_links for this router
         int_nports = 0
@@ -408,7 +406,7 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
         buf_rd_injrate  = ext_nports * buf_activity_rd / float(num_cycles) / int_nports
         buf_wr_injrate  = ext_nports * buf_activity_wr / float(num_cycles) / int_nports
         xbar_injrate    = ext_nports * xbar_activity / float(num_cycles) / int_nports
-        sa_injrate      = ext_nports * sw_activity_in / float(num_cycles) / int_nports
+        sa_injrate      = ext_nports * sw_activity_out / float(num_cycles) / int_nports
         
         assert(buf_rd_injrate > 0.0 and buf_wr_injrate > 0.0)
         assert(xbar_injrate > 0.0 and sa_injrate > 0.0)
