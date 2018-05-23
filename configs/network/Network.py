@@ -121,6 +121,7 @@ def init_network(options, network, InterfaceClass):
         network.ni_flit_size = options.link_width_bits / 8
         network.routing_algorithm = options.routing_algorithm
         network.garnet_deadlock_threshold = options.garnet_deadlock_threshold
+        network.concentration_factor = options.concentration_factor
 
     if options.network == "simple":
         network.setup_buffers()

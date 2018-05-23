@@ -134,8 +134,7 @@ mkdir -p $OUTDIR
 
 # Redirect stdout to file
 if [ $GARNETDEBUG -eq 1 ]; then
-#    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
-    GARNETDEBUG_FLAGS=""
+    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
     GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
 else
     GARNETDEBUG_FLAGS=""

@@ -29,10 +29,10 @@
 # Modified by David Smelt for Garnet2.0
 
 
-import string, sys, subprocess, os
+import string, sys, subprocess, os, re
 from ConfigParser import ConfigParser
 from collections import Counter
-from math import sqrt
+from math import ceil, sqrt
 
 # Compile DSENT to generate the Python module and then import it.
 # This script assumes it is executed from the gem5 root.
@@ -60,6 +60,57 @@ print("Compiled dsent")
 os.chdir("../../../")
 sys.path.append("build/ext/dsent")
 import dsent
+
+## Return assumed cpu core area based on limited existing die size models
+def getCoreAreaForCoreCount(num_cpus):
+    many_core = False
+    if num_cpus <= 10:
+        cpu_model_name = "14nm 10-core (LCC) Skylake Server"
+        cpu_model_die_size = 325.44 # mm^2
+        cpu_model_core_count = 10
+
+    elif 11 <= num_cpus <= 18:
+        cpu_model_name = "14nm 18-core (HCC) Skylake Server"
+        cpu_model_die_size = 485.0 # mm^2
+        cpu_model_core_count = 18
+
+    elif 19 <= num_cpus <= 28:
+        cpu_model_name = "14nm 28-core (XCC) Skylake Server"
+        cpu_model_die_size = 694.0 # mm^2
+        cpu_model_core_count = 28
+
+    elif 29 <= num_cpus <= 63:
+        # fictitious: resulting area will be the sum of 2 sockets
+        cpu_model_name = "14nm 28-core (XCC) Skylake Server (2 sockets)"
+        cpu_model_die_size = 694.0 # mm^2
+        cpu_model_core_count = 28
+
+    elif 64 <= num_cpus <= 76:
+        cpu_model_name = "14nm 76-core (XCC) Knights Landing"
+        cpu_model_die_size = 682.6 # mm^2
+        cpu_model_core_count = 76
+
+    else:
+        # fictitious: resulting area will be the sum of multiple sockets
+        cpu_model_name = "14nm 76-core (XCC) Knights Landing"
+        cpu_model_die_size = 682.6 # mm^2
+        cpu_model_core_count = 76
+
+        ceil64 = ceil(num_cpus / 64.0)
+        ceil76 = ceil(num_cpus / 76.0)
+        num_sockets = int(min(ceil64, ceil76))
+        many_core = True
+
+        cpu_model_name += " ({0} sockets)".format(num_sockets)
+
+    if many_core:
+        cpu_model_die_size *= num_cpus / float(cpu_model_core_count)
+    else:
+        cpu_model_die_size *= float(cpu_model_core_count) / num_cpus
+
+    core_area = (cpu_model_die_size / 1e6) / float(num_cpus)
+
+    return (core_area, cpu_model_name)
 
 # Parse gem5 config.ini file for the configuration parameters related to
 # the on-chip network.
@@ -101,7 +152,12 @@ def parseConfig(config_file):
     elif config.has_section("system.cpu0000"):
         num_cycles = config.getint("system.cpu0000", "sim_cycles")
     
-    assert(num_cycles > 0)
+    # Count number of CPUs
+    num_cpus = 0
+    children = config.get("system", "children")
+    num_cpus = len(re.findall("cpu[0-9]+[0-9]*", children))
+
+    assert(num_cycles > 0 and num_cpus > 0)
 
     routers = config.get("system.ruby.network", "routers").split()
     int_links = config.get("system.ruby.network", "int_links").split()
@@ -109,7 +165,7 @@ def parseConfig(config_file):
 
     return (config, number_of_virtual_networks, vcs_per_vnet,
             buffers_per_data_vc, buffers_per_control_vc, ni_flit_size_bits,
-            num_cycles, routers, int_links, ext_links)
+            num_cycles, num_cpus, routers, int_links, ext_links)
 
 ## For the given object return clock as int 
 def getClock(obj, config):
@@ -138,7 +194,7 @@ def getResultKey(s):
             return i
     return -1
 
-## Overwrite the wire length in link config file
+## Overwrite a parameter in router/link config file
 def setConfigParameter(config_file, string, new_val):
     try:
         new_string = string + (" " * max(1, 40 - len(string)))
@@ -230,11 +286,9 @@ def computeExtLinkPower(num_cycles, ext_links, stats_file, config,
 
 ## Compute total link power consumption, assuming that each link has a power
 ## model equal to single_link_power
-def computeTotalLinkPower(num_cycles, num_routers, max_area, int_links,
-                          ext_links, stats_file, config, link_config_file):
-    int_wire_length = sqrt(max_area) / (sqrt(num_routers) - 1.0)
-    assert(int_wire_length > 0.0)
-
+def computeTotalLinkPower(num_cycles, num_routers, int_wire_length,
+                          ext_wire_length, int_links, ext_links,
+                          stats_file, config, link_config_file):
     # Set int_link wire length in link config file
     setConfigParameter(link_config_file, "WireLength", int_wire_length)
 
@@ -244,9 +298,6 @@ def computeTotalLinkPower(num_cycles, num_routers, max_area, int_links,
                         config, link_config_file, num_links=1)
     int_single_link_power = dict(int_dsent_out)
 
-    ext_wire_length = 0.1 * sqrt(2 * (int_wire_length ** 2))
-    assert(ext_wire_length > 0.0)
-
     # Set ext_link wire length in link config file
     setConfigParameter(link_config_file, "WireLength", ext_wire_length)
 
@@ -255,6 +306,9 @@ def computeTotalLinkPower(num_cycles, num_routers, max_area, int_links,
     ext_dsent_out = computeExtLinkPower(num_cycles, ext_links, stats_file,
                         config, link_config_file, num_links=1)
     ext_single_link_power = dict(ext_dsent_out)
+
+    print("\nint_link wire length: %f mm" % (int_wire_length * 100))
+    print("ext_link wire length: %f mm" % (ext_wire_length * 100))
 
     # int_links are defined unidirectionally, ext_links bidirectionally
     int_num_links = len(int_links)
@@ -285,19 +339,29 @@ def computeTotalLinkPower(num_cycles, num_routers, max_area, int_links,
     print("\nTotal number of links: %d" % total_num_links)
     print("                       %d bidirectional int_links" % (int_num_links / 2))
     print("                       %d bidirectional ext_links" % (ext_num_links / 2))
-    print("\nTotal link power for all links:")
-    
-    total_dynamic = int_single_dynamic * int_num_links +\
-                    ext_single_dynamic * ext_num_links
-    total_leakage = int_single_leakage * int_num_links +\
-                    ext_single_leakage * ext_num_links
 
+    int_dynamic = int_single_dynamic * int_num_links
+    int_leakage = int_single_leakage * int_num_links
+    ext_dynamic = ext_single_dynamic * ext_num_links
+    ext_leakage = ext_single_leakage * ext_num_links
+    total_dynamic = int_dynamic + ext_dynamic
+    total_leakage = int_leakage + ext_leakage
+
+    print("\nTotal power for all int_links:")
+    print("    Dynamic power: %f" % int_dynamic)
+    print("    Leakage power: %f" % int_leakage)
+
+    print("\nTotal power for all ext_links:")
+    print("    Dynamic power: %f" % ext_dynamic)
+    print("    Leakage power: %f" % ext_leakage)
+
+    print("\nTotal power for all links:")
     print("    Dynamic power: %f" % total_dynamic)
     print("    Leakage power: %f" % total_leakage)
 
 ## Compute the power and area used for all routers
 def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
-                              int_links, ext_links, num_cycles):
+                              int_links, ext_links, num_cycles, num_cpus):
     results = []
     num_keys = 15
     sum_strings = [""] * num_keys
@@ -305,6 +369,8 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
 
     for router in routers:
         frequency = getClock(router, config)
+        if router == "system.ruby.network.routers09":
+            break
 
         # Count number of ports to int_links for this router
         int_nports = 0
@@ -331,19 +397,25 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
         setConfigParameter(router_config_file, "NumberInputPorts", int_nports)
         setConfigParameter(router_config_file, "NumberOutputPorts", ext_nports)
 
-        # Calculate injection rate (number of flits per cycle per port) for
-        # this router, based on stats
         buf_activity_rd = getStatsForString(stats_file, router + ".buffer_reads")
-        print "buf_activity_rd", buf_activity_rd
+        buf_activity_wr = getStatsForString(stats_file, router + ".buffer_writes")
+        xbar_activity   = getStatsForString(stats_file, router + ".crossbar_activity")
+        sw_activity_in  = getStatsForString(stats_file, router + ".sw_input_arbiter_activity")
+        sw_activity_out = getStatsForString(stats_file, router + ".sw_output_arbiter_activity")
 
-        buf_injrate = 2
-        xbar_injrate = 2
-        sa_injrate = 2
+        # Calculate injection (number of flits per cycle per port)
+        # for this router, based on stats
+        buf_rd_injrate  = ext_nports * buf_activity_rd / float(num_cycles) / int_nports
+        buf_wr_injrate  = ext_nports * buf_activity_wr / float(num_cycles) / int_nports
+        xbar_injrate    = ext_nports * xbar_activity / float(num_cycles) / int_nports
+        sa_injrate      = ext_nports * sw_activity_in / float(num_cycles) / int_nports
         
-        assert(buf_injrate > 0.0 and xbar_injrate > 0.0 and sa_injrate > 0.0)
+        assert(buf_rd_injrate > 0.0 and buf_wr_injrate > 0.0)
+        assert(xbar_injrate > 0.0 and sa_injrate > 0.0)
 
         # Set injection rates in router config file
-        setConfigParameter(router_config_file, "BufInjectionRate", buf_injrate)
+        setConfigParameter(router_config_file, "BufRdInjectionRate", buf_rd_injrate)
+        setConfigParameter(router_config_file, "BufWrInjectionRate", buf_wr_injrate)
         setConfigParameter(router_config_file, "XbarInjectionRate", xbar_injrate)
         setConfigParameter(router_config_file, "SAInjectionRate", sa_injrate)
 
@@ -367,22 +439,66 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     result_sum = dict(result_sum)
     
     # Calculate maximum total router area
-    max_area = 0.0
+    max_router_area = 0.0
     for d in results:
         for k, v in d.iteritems():
             if "Area/Total" in k:
-                if v > max_area:
-                    max_area = v
+                if v > max_router_area:
+                    max_router_area = v
+
+    assert(max_router_area > 0.0)
+
+    nrows = config.getint("system.ruby.network", "num_rows")
+    concentration_factor = 1
+    if config.has_option("system.ruby.network", "concentration_factor"):
+        concentration_factor = config.getint("system.ruby.network",
+                                             "concentration_factor")
+
+    ncols = num_cpus / nrows / concentration_factor
+    assert(nrows > 0 and ncols > 0)
+
+    num_vertical_cpus = nrows
+    num_horizontal_cpus = ncols
+    if concentration_factor > 1:
+        # For concentrated meshed, 2 CPUs per router are placed along the y-axis
+        num_vertical_cpus = num_cpus / (concentration_factor * 2)
+        num_horizontal_cpus = num_cpus / num_vertical_cpus
+
+    # Assume size of a single core based on limited models
+    (cpu_area, cpu_model_name) = getCoreAreaForCoreCount(num_cpus)
+
+    # Assume this external link wire_length:
+    ext_wire_length = 0.1 * sqrt(cpu_area)
+
+    noc_area = 0.0
+    int_wire_length = 0.0
+
+    # Calculate NoC area
+    noc_area_x = nrows * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
+                 + num_vertical_cpus * sqrt(cpu_area)
+    noc_area_y = ncols * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
+                 + num_horizontal_cpus * sqrt(cpu_area)
+    noc_area = noc_area_x * noc_area_y
+
+    # Calculate internal link wire length
+    # For odd-dimensional topologies, take the largest dimension
+    int_wire_length = max(noc_area_y, noc_area_x) / (max(num_vertical_cpus,
+                          num_horizontal_cpus) - 1.0)
+
+    assert(noc_area > 0.0 and int_wire_length > 0.0)
 
     # Generate output strings in the correct order
     for k, v in result_sum.iteritems():
         sum_strings[getResultKey(k)] = str(k) + str(v)
 
-    # Print sum
+    # Print sum and total NoC area
     print("\nSum totals for all %d routers:" % len(routers))
     print("\n".join(sum_strings))
+    print("\nArea of one CPU in proportion to {0}: {1:f} mm^2".format(\
+              cpu_model_name, cpu_area * 1e6))
+    print("\nTotal area of NoC including CPUs: %f mm^2" % (noc_area * 1e6))
     
-    return (result_sum, max_area)
+    return (result_sum, int_wire_length, ext_wire_length)
 
 ## Parse stats.txt for the specified key and return the associated value as float
 def getStatsForString(stats_file, key):
@@ -395,15 +511,16 @@ def getStatsForString(stats_file, key):
 
 ## Parse gem5 stats.txt file
 def parseStats(stats_file, config, router_config_file, link_config_file,
-               routers, int_links, ext_links, num_cycles):
+               routers, int_links, ext_links, num_cycles, num_cpus):
 
-    # Compute the power consumed by the routers
-    (result_sum, max_area) = computeRouterPowerAndArea(routers,
-                       stats_file, config, router_config_file,
-                       int_links, ext_links, num_cycles)
+    # Compute the power and area used by the routers
+    (result_sum, int_wire_length, ext_wire_length) = \
+        computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
+                                    int_links, ext_links, num_cycles, num_cpus)
 
     # Compute total link power consumption
-    computeTotalLinkPower(num_cycles, len(routers), max_area, int_links, ext_links,
+    computeTotalLinkPower(num_cycles, len(routers), int_wire_length, ext_wire_length,
+                          int_links, ext_links,
                           stats_file, config, link_config_file)
 
 
@@ -426,8 +543,8 @@ def main():
     stats_str = os.path.join(sys.argv[1], "stats.txt")
 
     (config, number_of_virtual_networks, vcs_per_vnet, buffers_per_data_vc,
-     buffers_per_control_vc, ni_flit_size_bits, num_cycles, routers, int_links,
-     ext_links) = parseConfig(cfg_str)
+     buffers_per_control_vc, ni_flit_size_bits, num_cycles, num_cpus,
+     routers, int_links, ext_links) = parseConfig(cfg_str)
 
     router_cfg = os.path.join(sys.argv[1], "router.cfg")
     link_cfg = os.path.join(sys.argv[1], "electrical-link.cfg")
@@ -438,7 +555,7 @@ def main():
         link_cfg = sys.argv[3]
 
     parseStats(stats_str, config, router_cfg, link_cfg, routers, int_links,
-               ext_links, num_cycles)
+               ext_links, num_cycles, num_cpus)
 
 if __name__ == "__main__":
     main()
