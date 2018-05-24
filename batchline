@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 1024 1 4 Line $i uniform_random 10000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 512 1 4 Line $i uniform_random 10000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 256 1 4 Line $i uniform_random 10000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 128 1 4 Line $i uniform_random 15000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 128 1 1 Line $i uniform_random 15000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 64 1 4 Line $i uniform_random 20000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 64 1 1 Line $i uniform_random 20000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 32 1 4 Line $i uniform_random 25000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 32 1 1 Line $i uniform_random 25000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 16 1 4 Line $i uniform_random 50000
+    sleep 60
+done
+
+for ((k=5;k<96;k+=10))
+do
+    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i="0"$i
+    ./rungarnet 16 1 1 Line $i uniform_random 50000
+    sleep 60
+done
+

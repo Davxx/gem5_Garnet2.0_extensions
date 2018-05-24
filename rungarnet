@@ -23,7 +23,7 @@ NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
 LINKWIDTHBITS=512       # Width in bits for all links inside the network
 DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
-INJVNET=0              # Only inject in this vnet (0, 1 or 2).
+INJVNET=-1              # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
 CONCENTRATION_FACTOR=4  # Number of cpu's per router
@@ -73,9 +73,12 @@ if [ "$#" -gt 6 ]; then
     NCYCLES=$7
 fi
 
-# Set the number of directory controllers
+# Set the number of directory controllers, with a maximum of 256
 if [ $NDIRS -eq -1 ]; then
     NDIRS=$NCPUS
+fi
+if [ $NDIRS -gt 256 ]; then
+    NDIRS=256
 fi
 
 # To avoid deadlock in HierarchicalRing topologies with NROWS>4,
@@ -171,7 +174,7 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 -d $OUTDIR configs/example/garnet_synth_traffic.py \
 --network=garnet2.0 \
 --num-cpus=$NCPUS \
---num-dirs=64 \
+--num-dirs=$NDIRS \
 --topology=$TOPOLOGY \
 --mesh-rows=$NROWS \
 --sim-cycles=$NCYCLES \
@@ -206,16 +209,18 @@ EXITCODE=$?
 if [ $GARNETDEBUG -eq 1 ]; then
     python grepdebug.py "$GARNETDEBUG_TOFILE"
 fi
+
 if [ $EXITCODE -eq 0 ]; then
+    # Copy network-related stats to network_stats.txt
     python grepnetworkstats.py $OUTDIR
-    
-    # Calculate power and area with DSENT
-    DSENT_OUT=$OUTDIR/dsent_out.txt
-    echo "Writing DSENT power and area model to: $DSENT_OUT"
-    python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
     
     # Plot latency
     python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
+    
+    # Calculate power and area with DSENT
+    DSENT_OUT=$OUTDIR/dsent_out.txt
+    #echo "Writing DSENT power and area model to: $DSENT_OUT"
+    #python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
 else
     rmdir $OUTDIR &> /dev/null
 fi
