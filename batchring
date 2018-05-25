@@ -1,90 +1,18 @@
 #!/usr/bin/env bash
 
-for ((k=5;k<96;k+=10))
+MAXLATENCY=200
+
+for ((k=1;k<40;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 1024 2 4 Ring $i uniform_random 10000
-    sleep 60
+    ./rungarnet 16 2 2 Ring $i uniform_random 20000
 done
 
-for ((k=5;k<96;k+=10))
+for ((k=1;k<40;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 512 2 4 Ring $i uniform_random 10000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 256 2 4 Ring $i uniform_random 10000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 128 2 4 Ring $i uniform_random 15000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 128 2 1 Ring $i uniform_random 15000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 64 2 4 Ring $i uniform_random 20000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 64 2 1 Ring $i uniform_random 20000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 32 2 4 Ring $i uniform_random 25000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 32 2 1 Ring $i uniform_random 25000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 16 2 4 Ring $i uniform_random 50000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 16 2 1 Ring $i uniform_random 50000
-    sleep 60
+    ./rungarnet 32 2 2 Ring $i uniform_random 20000
 done
 

@@ -27,14 +27,14 @@ INJVNET=-1              # Only inject in this vnet (0, 1 or 2).
                         #   0 and 1 are 1-flit, 2 is 5-flit.
                         #   Set to -1 to inject randomly in all vnets.
 CONCENTRATION_FACTOR=4  # Number of cpu's per router
-NCPUS=1024                # Number of cpu's
+NCPUS=1024              # Number of cpu's
 NDIRS=-1                # Number of directory controllers, must <= NCPUS.
-                        #   Set to -1 to equal NCPUS
+                        #   Set to -1 to equal the number of routers
 NROWS=16
 TOPOLOGY=Mesh_XY
 INJRATE=0.4
 SYNTH=uniform_random
-NCYCLES=5000
+NCYCLES=2000
 ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
                         #   0: Weight-based table (shortest path)
@@ -75,7 +75,7 @@ fi
 
 # Set the number of directory controllers, with a maximum of 256
 if [ $NDIRS -eq -1 ]; then
-    NDIRS=$NCPUS
+    NDIRS=$(($NCPUS/$CONCENTRATION_FACTOR))
 fi
 if [ $NDIRS -gt 256 ]; then
     NDIRS=256

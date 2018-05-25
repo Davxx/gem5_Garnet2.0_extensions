@@ -1,90 +1,52 @@
 #!/usr/bin/env bash
 
-for ((k=5;k<96;k+=10))
+MAXLATENCY=200
+
+for ((k=1;k<50;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 1024 1 4 Line $i uniform_random 10000
-    sleep 60
+    ./rungarnet 12 1 1 Line $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 
-for ((k=5;k<96;k+=10))
+for ((k=1;k<50;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 512 1 4 Line $i uniform_random 10000
-    sleep 60
+    ./rungarnet 8 1 1 Line $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 
-for ((k=5;k<96;k+=10))
+for ((k=1;k<50;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 256 1 4 Line $i uniform_random 10000
-    sleep 60
+    ./rungarnet 6 1 1 Line $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 
-for ((k=5;k<96;k+=10))
+for ((k=1;k<50;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 128 1 4 Line $i uniform_random 15000
-    sleep 60
+    ./rungarnet 4 1 1 Line $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 
-for ((k=5;k<96;k+=10))
+for ((k=1;k<20;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 128 1 1 Line $i uniform_random 15000
-    sleep 60
+    ./rungarnet 16 1 2 Line $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 
-for ((k=5;k<96;k+=10))
+for ((k=1;k<20;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 64 1 4 Line $i uniform_random 20000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 64 1 1 Line $i uniform_random 20000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 32 1 4 Line $i uniform_random 25000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 32 1 1 Line $i uniform_random 25000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 16 1 4 Line $i uniform_random 50000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 16 1 1 Line $i uniform_random 50000
-    sleep 60
+    ./rungarnet 32 1 2 Line $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 

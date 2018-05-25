@@ -48,6 +48,11 @@ class FlattenedButterfly(SimpleTopology):
             self.link_count += 2
 
             # Generate Tikz code for edge
+            # Limit number of edges for large scale topologies to the first 64 nodes
+            if len(self.routers) > 64:
+                if src_id >= 64:
+                    return
+
             thick_line = "line width=0.6mm" if weight == 1 else ""
             bend_right = "bend right=30" if tikz_bend_right else ""
 

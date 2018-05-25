@@ -30,7 +30,7 @@ QueryString                             = \\
     NddPower>>Router:Leakage@1 \\
     Area>>Router:Active@1 \\
 # Technology file (see other models in tech/models)
-ElectricalTechModelFilename             = ext/dsent/tech/tech_models/Bulk22LVT.model
+ElectricalTechModelFilename             = ext/dsent/tech/tech_models/TG11LVT.model
 
 ###############################################################################
 # Timing optimization
@@ -170,7 +170,7 @@ EvaluateString                          = \\
     print "    Leakage power: " link_static; \\
 
 # Technology file (see models in tech/models)
-ElectricalTechModelFilename             = ext/dsent/tech/tech_models/Bulk45LVT.model
+ElectricalTechModelFilename             = ext/dsent/tech/tech_models/TG11LVT.model
 
 ###############################################################################
 # Timing optimization

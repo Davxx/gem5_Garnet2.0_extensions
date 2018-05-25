@@ -1,66 +1,13 @@
 #!/usr/bin/env bash
 
-for ((k=5;k<96;k+=10))
+MAXLATENCY=200
+
+for ((k=51;k<80;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
+    i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 128 4 4 HierarchicalRing $i uniform_random 15000
-    sleep 60
+    ./rungarnet 16 4 1 HierarchicalRing $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
 done
 
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 128 8 1 HierarchicalRing $i uniform_random 15000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 64 4 4 HierarchicalRing $i uniform_random 20000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 64 8 1 HierarchicalRing $i uniform_random 20000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 32 2 4 HierarchicalRing $i uniform_random 25000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 32 4 1 HierarchicalRing $i uniform_random 25000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 16 2 4 HierarchicalRing $i uniform_random 50000
-    sleep 60
-done
-
-for ((k=5;k<96;k+=10))
-do
-    i=$(bc <<<"scale=2; $k / 100" )    # when k=402 you get i=4.02, etc.
-    i="0"$i
-    ./rungarnet 16 4 1 HierarchicalRing $i uniform_random 50000
-    sleep 60
-done
 

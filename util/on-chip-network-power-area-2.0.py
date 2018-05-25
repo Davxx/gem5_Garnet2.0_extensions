@@ -80,8 +80,8 @@ def getCoreAreaForCoreCount(num_cpus):
         cpu_model_core_count = 28
 
     elif 29 <= num_cpus <= 63:
-        # fictitious: resulting area will be the sum of 2 sockets
-        cpu_model_name = "14nm 28-core (XCC) Skylake Server (2 sockets)"
+        # fictitious
+        cpu_model_name = "14nm 28-core (XCC) Skylake Server"
         cpu_model_die_size = 694.0 # mm^2
         cpu_model_core_count = 28
 
@@ -91,7 +91,7 @@ def getCoreAreaForCoreCount(num_cpus):
         cpu_model_core_count = 76
 
     else:
-        # fictitious: resulting area will be the sum of multiple sockets
+        # fictitious
         cpu_model_name = "14nm 76-core (XCC) Knights Landing"
         cpu_model_die_size = 682.6 # mm^2
         cpu_model_core_count = 76
@@ -100,8 +100,6 @@ def getCoreAreaForCoreCount(num_cpus):
         ceil76 = ceil(num_cpus / 76.0)
         num_sockets = int(min(ceil64, ceil76))
         many_core = True
-
-        cpu_model_name += " ({0} sockets)".format(num_sockets)
 
     if many_core:
         cpu_model_die_size *= num_cpus / float(cpu_model_core_count)

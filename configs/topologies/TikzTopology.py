@@ -23,17 +23,40 @@ class TikzTopology():
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
 
+        node_dist = 1.5
+        node_font = "\\Large"
+        node_size = 25
+
+        width = ncols * 0.8 if ncols == nrows else ncols * 1.2
+        height = nrows * 0.8 if ncols == nrows else nrows * 1.2
+        nrouters = ncols * nrows
+        
+        if ncols >= 32 or nrows >= 32 or nrouters >= 100:
+
+            # Limit large scale topologies
+            factor = nrouters / 100.0
+
+            width *= factor
+            height *= factor
+            node_dist /= factor
+            node_font = "\\small" if nrouters < 256 else "\\footnotesize"
+            node_size /= factor
+
+            width = min(40, width)
+            height = min(40, height)
+            node_dist = max(1, node_dist)
+            node_size = max(10, node_size)
+
         try:
-            width = ncols * 0.8 if ncols == nrows else ncols * 1.2
-            height = nrows * 0.8 if ncols == nrows else nrows * 1.2
             self.tikzfile = open(os.path.join(self.outdir, self.texname), "w")
-            self.tikzfile.write("\\documentclass{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{tikz}\n"
-                                "\\usepackage[letterpaper,paperwidth=" + str(width) + "in,paperheight="\
-                                + str(height) + "in]{geometry}\n\\geometry{margin=0.3in}\n\\usepackage{float}\n"
-                                "\\begin{document}\n\\pagenumbering{gobble}\n\\begin{figure}[p]\n\\centering\n"
-                                "\\begin{tikzpicture}[shorten >=1pt,auto,node distance=1.5cm,align=center,"
-                                "thick,main node/.style={minimum size=25pt,fill=green!25,draw,"
-                                "font=\\sffamily\\Large\\bfseries}]\n")
+            self.tikzfile.write(
+                "\\documentclass{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{tikz}\n"
+                "\\usepackage[letterpaper,paperwidth=" + str(width) + "in,paperheight="\
+                + str(height) + "in]{geometry}\n\\geometry{margin=0.3in}\n\\usepackage{float}\n"
+                "\\begin{document}\n\\pagenumbering{gobble}\n\\begin{figure}[p]\n\\centering\n"
+                "\\begin{tikzpicture}[shorten >=1pt,auto,node distance=" + str(node_dist) +\
+                "cm,align=center,thick,main node/.style={minimum size=" + str(int(node_size)) +\
+                "pt,fill=green!25,draw,font=\\sffamily" + node_font + "\\bfseries}]\n")
         except IOError:
             return None
 
