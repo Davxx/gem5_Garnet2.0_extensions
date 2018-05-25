@@ -2,38 +2,6 @@
 
 MAXLATENCY=200
 
-for ((k=1;k<50;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 12 1 1 Line $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-done
-
-for ((k=1;k<50;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 8 1 1 Line $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-done
-
-for ((k=1;k<50;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 6 1 1 Line $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-done
-
-for ((k=1;k<50;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 4 1 1 Line $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-done
-
 for ((k=1;k<20;k+=2))
 do
     i=$(bc <<<"scale=2; $k / 100" )

@@ -7,7 +7,7 @@ for ((k=1;k<95;k+=2))
 do
     i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 32 4 2 Mesh_XY $i uniform_random 20000
+    ./rungarnet 512 16 1 Mesh_XY $i uniform_random 20000
     LATENCY=$(<m5out/latest_latency.txt)
     if [ $LATENCY -gt $MAXLATENCY ]; then
         EXTRA=$(($EXTRA - 1))
@@ -22,7 +22,7 @@ for ((k=1;k<95;k+=2))
 do
     i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
-    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 20000
+    ./rungarnet 512 8 4 Mesh_XY $i uniform_random 20000
     LATENCY=$(<m5out/latest_latency.txt)
     if [ $LATENCY -gt $MAXLATENCY ]; then
         EXTRA=$(($EXTRA - 1))
@@ -31,3 +31,34 @@ do
         break
     fi
 done
+
+EXTRA=2
+for ((k=1;k<95;k+=2))
+do
+    i=$(bc <<<"scale=2; $k / 100" )
+    i="0"$i
+    ./rungarnet 1024 32 1 Mesh_XY $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
+    if [ $LATENCY -gt $MAXLATENCY ]; then
+        EXTRA=$(($EXTRA - 1))
+    fi
+    if [ $EXTRA -eq 0 ]; then
+        break
+    fi
+done
+
+EXTRA=2
+for ((k=1;k<95;k+=2))
+do
+    i=$(bc <<<"scale=2; $k / 100" )
+    i="0"$i
+    ./rungarnet 1024 16 4 Mesh_XY $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
+    if [ $LATENCY -gt $MAXLATENCY ]; then
+        EXTRA=$(($EXTRA - 1))
+    fi
+    if [ $EXTRA -eq 0 ]; then
+        break
+    fi
+done
+
