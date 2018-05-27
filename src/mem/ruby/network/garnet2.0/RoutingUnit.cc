@@ -239,10 +239,6 @@ RoutingUnit::outportComputeRandom(RouteInfo route,
                                   int inport,
                                   PortDirection inport_dirn)
 {
-    int M5_VAR_USED nrows = m_router->get_net_ptr()->getNumRows();
-    int ncols = m_router->get_net_ptr()->getNumCols();
-    assert(nrows > 0 && ncols > 0);
-    
     std::vector<int> output_link_candidates;
     int ncandidates = 0;
 

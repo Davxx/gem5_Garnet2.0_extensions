@@ -8,7 +8,7 @@ cscope.out
 *~
 .*.swp
 .*.swo
-m5out
+/m5out
 foo.trace
 .Trash*
 nbproject
@@ -23,8 +23,4 @@ nbproject
 /util/tap/*.o
 /util/tap/m5tap
 /util/term/m5term
-/system/arm/dt/*.dtb
-/system/arm/simple_bootloader/*.o
-/system/arm/simple_bootloader/boot.arm
-/system/arm/simple_bootloader/boot_emm.arm
-/system/arm/aarch64_bootloader/boot_emm.arm64
+/system

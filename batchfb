@@ -2,188 +2,21 @@
 
 MAXLATENCY=300
 
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 16 4 1 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 32 4 1 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 32 4 2 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 64 8 1 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 64 4 4 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 128 8 1 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 128 4 4 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 256 16 1 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 256 8 4 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 512 16 1 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 512 8 4 FlattenedButterfly $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
-
-EXTRA=2
-for ((k=1;k<95;k+=2))
+for ((k=15;k<25;k+=4))
 do
     i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
     ./rungarnet 1024 32 1 FlattenedButterfly $i uniform_random 10000
     LATENCY=$(<m5out/latest_latency.txt)
     if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
         break
     fi
 done
 
-EXTRA=2
-for ((k=1;k<95;k+=2))
+./rungarnet 1024 16 4 FlattenedButterfly 0.01 uniform_random 10000
+
+EXTRA=1
+for ((k=11;k<95;k+=4))
 do
     i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
