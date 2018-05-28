@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 #
-# Script for running GarnetStandalone simulations
+# Script for running the Splash2 FFT benchmark in gem5 SE mode with a Garnet2.0
+# network
 #
-# Usage: ./rungarnet n_cpus n_rows concentration_factor topology_py_file \
-#                    flit_injection_rate synthetic_traffic_type n_cycles
+# Usage: ./runfft n_cpus n_rows concentration_factor topology_py_file M
 #
 #                 n_cpus: number of cpu's
 #                 n_rows: number of rows in the topology structure
 #   concentration_factor: number of cpu's per router
 #       topology_py_file: name of the .py-file in configs/topologies/
-#    flit_injection_rate: traffic injection rate in packets/node/cycle
-# synthetic_traffic_type: uniform_random, tornado, bit_complement, bit_reverse,
-#                         bit_rotation, neighbor, shuffle, transpose
-#               n_cycles: total number of cycles for which the simulation should run
+#                      M: problem size = 2^M data points, must be an even number
+#                           The base problem size for an up-to-64 processor
+#                           machine is 65,536 complex data points (M=16)
 
 # Defaults:
 HIDEWARNERROR=0         # Bool: hide warnings and errors
@@ -23,18 +22,12 @@ NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
 LINKWIDTHBITS=512       # Width in bits for all links inside the network
 DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
-INJVNET=-1              # Only inject in this vnet (0, 1 or 2);
-                        #   0 and 1 are 1-flit, 2 is 5-flit;
-                        #   set to -1 to inject randomly in all vnets.
 CONCENTRATION_FACTOR=4  # Number of cpu's per router
-NCPUS=1024              # Number of cpu's
+NCPUS=16                # Number of cpu's
 NDIRS=-1                # Number of directory controllers, must <= NCPUS;
                         #   set to -1 to equal the number of routers <= 256.
-NROWS=16
+NROWS=4
 TOPOLOGY=Mesh_XY
-INJRATE=0.4
-SYNTH=uniform_random
-NCYCLES=2000
 ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
                         #   0: Weight-based table (shortest path)
@@ -42,16 +35,13 @@ ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         #   2: Random (custom)
                         #   3: Adaptive (not implemented)
 
-# Send between specific router id's. -1: disable
-SENDER_ID=-1
-DEST_ID=-1
 
 # Get parameter arguments
 if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
     NCPUS=$1
 else
     # Print help info
-    sed -n "3,43p" $0
+    sed -n "3,36p" $0
     exit
 fi
 if [ "$#" -gt 1 ]; then
@@ -64,13 +54,7 @@ if [ "$#" -gt 3 ]; then
     TOPOLOGY=$4
 fi
 if [ "$#" -gt 4 ]; then
-    INJRATE=$5
-fi
-if [ "$#" -gt 5 ]; then
-    SYNTH=$6
-fi
-if [ "$#" -gt 6 ]; then
-    NCYCLES=$7
+    PROBLEM_SIZE=$5
 fi
 
 # Set the number of directory controllers, with a maximum of 256
@@ -102,7 +86,7 @@ fi
 # Recalculate ncols for concentration factor
 if [ $CONCENTRATION_FACTOR -gt 1 ]; then
     NCOLS=$(($NCPUS/$NROWS/$CONCENTRATION_FACTOR))
-    CONCENTRATION_STRING=$CONCENTRATION_FACTOR"cpus_per_router-"
+    CONCENTRATION_STRING=$CONCENTRATION_FACTOR"-cpus_per_router"
     CONCENTRATION_FACTOR="--concentration-factor="$CONCENTRATION_FACTOR
 else
     NCOLS=$(($NCPUS/$NROWS))
@@ -119,8 +103,8 @@ case "$ROUTINGALGORITHM" in
     *) RALGNAME=unknown_routing ;;
 esac
 
-OUTDIR="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$INJRATE"injrate"-$NCYCLES"cycles"
-LATENCY_FILE="m5out/"$TOPOLOGY-$NCPUS"core-"$NROWS"x"$NCOLS-$CONCENTRATION_STRING$SYNTH-$NCYCLES"cycles-latency.txt"
+OUTDIR="m5out/FFT-M"$PROBLEM_SIZE"-"$TOPOLOGY"-"$NCPUS"core-"$NROWS"x"$NCOLS""$CONCENTRATION_STRING
+LATENCY_FILE=$OUTDIR"-latency.txt"
 
 # Generate output dir name
 if [ -d $OUTDIR ]; then
@@ -137,7 +121,7 @@ mkdir -p $OUTDIR
 
 # Redirect stdout to file
 if [ $GARNETDEBUG -eq 1 ]; then
-    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork,GarnetSyntheticTraffic"
+    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork"
     GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
 else
     GARNETDEBUG_FLAGS=""
@@ -159,37 +143,35 @@ else
     HIDEWARNERROR=""
 fi
 
-SEND_TO_ROUTER_IDS=""
-if [ ! $SENDER_ID -eq -1 ]; then
-    SEND_TO_ROUTER_IDS+="--single-sender-id=$SENDER_ID"
-fi
-if [ ! $DEST_ID -eq -1 ]; then
-    SEND_TO_ROUTER_IDS+=" --single-dest-id=$DEST_ID"
-fi
-
 # Set environment variable for recognizing simulation type in gem5 source files
 export GEM5SIMTYPE=GarnetStandalone
 
-RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS \
--d $OUTDIR configs/example/garnet_synth_traffic.py \
---network=garnet2.0 \
+RUNCMD="./build/X86_MESI_Two_Level/gem5.fast -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS \
+-d $OUTDIR configs/example/fft_benchmark.py \
+--psize=$PROBLEM_SIZE \
 --num-cpus=$NCPUS \
 --num-dirs=$NDIRS \
+--cpu-type=TimingSimpleCPU \
+--mem-size=1GB \
+--l1d_size=32kB \
+--l1i_size=32kB \
+--l1d_assoc=4 \
+--l1i_assoc=4 \
+--num-l2caches=$NDIRS \
+--l2_size=1024kB \
+--l2_assoc=8 \
+--ruby \
+--network=garnet2.0 \
 --topology=$TOPOLOGY \
 --mesh-rows=$NROWS \
---sim-cycles=$NCYCLES \
---injectionrate=$INJRATE \
---synthetic=$SYNTH \
 --routing-algorithm=$ROUTINGALGORITHM \
 --link-width-bits=$LINKWIDTHBITS \
 --vcs-per-vnet=$NVCS \
 --buffers-per-data-vc=$NBUFFERS_PER_DATA_VC \
 --buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
---inj-vnet=$INJVNET \
 $CONCENTRATION_FACTOR \
-$USE_ESCAPE_VC \
-$SEND_TO_ROUTER_IDS"
+$USE_ESCAPE_VC"
 
 redirect_cmd() {
     if [ $GARNETDEBUG -eq 1 ]; then
@@ -214,12 +196,14 @@ if [ $EXITCODE -eq 0 ]; then
     python grepnetworkstats.py $OUTDIR
     
     # Plot latency
-    python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
+    #python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
     
     # Calculate power and area with DSENT
     DSENT_OUT=$OUTDIR/dsent_out.txt
-    #echo "Writing DSENT power and area model to: $DSENT_OUT"
-    #python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
+    echo "Writing DSENT power and area model to: $DSENT_OUT"
+    python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
 else
     rmdir $OUTDIR &> /dev/null
 fi
+
+

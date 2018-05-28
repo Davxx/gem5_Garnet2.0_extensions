@@ -63,24 +63,34 @@ import dsent
 
 ## Return assumed cpu core area based on limited existing die size models
 def getCoreAreaForCoreCount(num_cpus):
-    many_core = False
-    if num_cpus <= 10:
+    scale_die_size = True
+
+    if 1 <= num_cpus <= 4:
+        scale_die_size = False
+        cpu_model_name = "14nm quad-core Skylake-D Server"
+        cpu_model_die_size = 122.6 # mm^2
+        cpu_model_core_count = 4
+
+    elif 5 <= num_cpus <= 12:
+        if num_cpus > 10:
+            scale_die_size = False
         cpu_model_name = "14nm 10-core (LCC) Skylake Server"
         cpu_model_die_size = 325.44 # mm^2
         cpu_model_core_count = 10
 
-    elif 11 <= num_cpus <= 18:
+    elif 13 <= num_cpus <= 20:
         cpu_model_name = "14nm 18-core (HCC) Skylake Server"
         cpu_model_die_size = 485.0 # mm^2
         cpu_model_core_count = 18
 
-    elif 19 <= num_cpus <= 28:
+    elif 21 <= num_cpus <= 28:
         cpu_model_name = "14nm 28-core (XCC) Skylake Server"
         cpu_model_die_size = 694.0 # mm^2
         cpu_model_core_count = 28
 
     elif 29 <= num_cpus <= 63:
-        # fictitious
+        # fictitious => do not scale die size
+        scale_die_size = False
         cpu_model_name = "14nm 28-core (XCC) Skylake Server"
         cpu_model_die_size = 694.0 # mm^2
         cpu_model_core_count = 28
@@ -91,19 +101,13 @@ def getCoreAreaForCoreCount(num_cpus):
         cpu_model_core_count = 76
 
     else:
-        # fictitious
+        # fictitious => do not scale die size
+        scale_die_size = False
         cpu_model_name = "14nm 76-core (XCC) Knights Landing"
         cpu_model_die_size = 682.6 # mm^2
         cpu_model_core_count = 76
 
-        ceil64 = ceil(num_cpus / 64.0)
-        ceil76 = ceil(num_cpus / 76.0)
-        num_sockets = int(min(ceil64, ceil76))
-        many_core = True
-
-    if many_core:
-        cpu_model_die_size *= num_cpus / float(cpu_model_core_count)
-    else:
+    if scale_die_size:
         cpu_model_die_size *= float(cpu_model_core_count) / num_cpus
 
     core_area = (cpu_model_die_size / 1e6) / float(num_cpus)
@@ -138,24 +142,12 @@ def parseConfig(config_file):
     ni_flit_size_bits = 8 * config.getint("system.ruby.network",
                                           "ni_flit_size")
 
-    # Get num_cycles for one of four possible config.ini:[system.cpu????] 
-    # formats
-    num_cycles = 0
-    if config.has_section("system.cpu0"):
-        num_cycles = config.getint("system.cpu0", "sim_cycles")
-    elif config.has_section("system.cpu00"):
-        num_cycles = config.getint("system.cpu00", "sim_cycles")
-    elif config.has_section("system.cpu000"):
-        num_cycles = config.getint("system.cpu000", "sim_cycles")
-    elif config.has_section("system.cpu0000"):
-        num_cycles = config.getint("system.cpu0000", "sim_cycles")
-    
     # Count number of CPUs
     num_cpus = 0
     children = config.get("system", "children")
     num_cpus = len(re.findall("cpu[0-9]+[0-9]*", children))
 
-    assert(num_cycles > 0 and num_cpus > 0)
+    assert(num_cpus > 0)
 
     routers = config.get("system.ruby.network", "routers").split()
     int_links = config.get("system.ruby.network", "int_links").split()
@@ -163,7 +155,7 @@ def parseConfig(config_file):
 
     return (config, number_of_virtual_networks, vcs_per_vnet,
             buffers_per_data_vc, buffers_per_control_vc, ni_flit_size_bits,
-            num_cycles, num_cpus, routers, int_links, ext_links)
+            num_cpus, routers, int_links, ext_links)
 
 ## For the given object return clock as int 
 def getClock(obj, config):
@@ -501,13 +493,21 @@ def getStatsForString(stats_file, key):
     with open(stats_file, "rt") as f:
         for line in f:
             if key in line:
+
+                # Remove comments
+                comment_pos = line.find("#")
+                if comment_pos > -1:
+                    line = line[0:comment_pos]
+
+                # Return last column as float
                 split = line.split()
                 return float(split[-1])
     return 0.0
 
 ## Parse gem5 stats.txt file
 def parseStats(stats_file, config, router_config_file, link_config_file,
-               routers, int_links, ext_links, num_cycles, num_cpus):
+               routers, int_links, ext_links, num_cpus):
+    num_cycles = getStatsForString(stats_file, "sim_ticks")
 
     # Compute the power and area used by the routers
     (result_sum, int_wire_length, ext_wire_length) = \
@@ -539,7 +539,7 @@ def main():
     stats_str = os.path.join(sys.argv[1], "stats.txt")
 
     (config, number_of_virtual_networks, vcs_per_vnet, buffers_per_data_vc,
-     buffers_per_control_vc, ni_flit_size_bits, num_cycles, num_cpus,
+     buffers_per_control_vc, ni_flit_size_bits, num_cpus,
      routers, int_links, ext_links) = parseConfig(cfg_str)
 
     router_cfg = os.path.join(sys.argv[1], "router.cfg")
@@ -551,7 +551,7 @@ def main():
         link_cfg = sys.argv[3]
 
     parseStats(stats_str, config, router_cfg, link_cfg, routers, int_links,
-               ext_links, num_cycles, num_cpus)
+               ext_links, num_cpus)
 
 if __name__ == "__main__":
     main()

@@ -76,6 +76,9 @@ parser = optparse.OptionParser()
 Options.addCommonOptions(parser)
 Options.addSEOptions(parser)
 
+parser.add_option("--psize", type="int", default=18,
+                  help="problem size 2^M data points, must be an even number")
+
 if '--ruby' in sys.argv:
     Ruby.define_options(parser)
 
@@ -145,7 +148,7 @@ if options.simpoint_profile:
 class FFT(Process):
     cwd = '/home/dav/gem5/sniper_splash2/splash2/codes/kernels/fft'
     executable = '/home/dav/gem5/sniper_splash2/splash2/codes/kernels/fft/FFT'
-    cmd = ['FFT', '-p', np, '-m18']
+    cmd = ['FFT', '-p', np, '-m{0:d}'.format(options.psize)]
 
 root = Root(full_system = False, system = system)
 root.workload = FFT()
