@@ -91,13 +91,11 @@ if [ "$TOPOLOGY" == "HierarchicalRing" ] && [ $NROWS -gt 4 ]; then
     NDIRS=$NROWS
 fi
 
-
+USE_ESCAPE_VC=""
 # Automatically enable Escape VC's for Ring and disable otherwise
-if [ "$TOPOLOGY" == "Ring" ]; then
-    USE_ESCAPE_VC="--escapevc"
-else
-    USE_ESCAPE_VC=""
-fi
+#if [ "$TOPOLOGY" == "Ring" ]; then
+#    USE_ESCAPE_VC="--escapevc"
+#fi
 
 # Recalculate ncols for concentration factor
 if [ $CONCENTRATION_FACTOR -gt 1 ]; then
@@ -187,6 +185,7 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 --buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
 --inj-vnet=$INJVNET \
+--tikz \
 $CONCENTRATION_FACTOR \
 $USE_ESCAPE_VC \
 $SEND_TO_ROUTER_IDS"
@@ -215,6 +214,9 @@ if [ $EXITCODE -eq 0 ]; then
     
     # Plot latency
     python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
+    
+    # Generate topology.png from topology.tex
+    ./tex2png $OUTDIR > /dev/null
     
     # Calculate power and area with DSENT
     #./rundsent $OUTDIR

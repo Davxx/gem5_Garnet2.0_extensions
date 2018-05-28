@@ -166,6 +166,8 @@ for i in xrange(np):
 
     system.cpu[i].createThreads()
 
+m5.disableAllListeners()
+
 if options.ruby:
     Ruby.create_system(options, False, system)
     assert(options.num_cpus == len(system.ruby._cpu_ports))

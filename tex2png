@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# Tikz topology code, written to 'sim_output_directory/topology.tex', will be converted to PDF
+# If imagemagick is installed, the topology converted to PNG
+
+CLEAN_UP=1 # Clean up .tex-files after successful conversion?
+BASENAME=topology
+WORKING_DIR=$PWD
+
+if [ "$#" -lt 1 ]; then
+    echo "Please specify a simulation output directory"
+    exit
+fi
+
+for outdir in "$@"; do
+    cd $WORKING_DIR
+    cd $outdir
+
+    if [ ! -f $BASENAME.tex ]; then
+        echo "$outdir/$BASENAME.tex not found"
+        continue
+    fi
+    
+    pdflatex -halt-on-error $BASENAME.tex
+    if [ ! $? -eq 0 ]; then
+        continue
+    fi
+    
+    convert -density 300 $BASENAME.pdf -trim -bordercolor White -border 10x10 +repage $BASENAME.png
+    
+    if [ $? -eq 0 ] && [ $CLEAN_UP -eq 1 ]; then
+        rm $BASENAME.aux
+        rm $BASENAME.log
+        rm $BASENAME.pdf
+        rm $BASENAME.tex
+    fi
+    echo "Written topology diagram to $outdir/$BASENAME.png"
+done

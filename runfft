@@ -14,9 +14,9 @@
 #                           machine is 65,536 complex data points (M=16)
 
 # Defaults:
+PROBLEM_SIZE=18         # Problem size M
 HIDEWARNERROR=0         # Bool: hide warnings and errors
 HIDESTDOUT=0            # Bool: hide stdout
-GARNETDEBUG=0           # Bool: enable Ruby/Garnet2.0 debug printing to `debug.txt`
 NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
@@ -53,9 +53,13 @@ fi
 if [ "$#" -gt 3 ]; then
     TOPOLOGY=$4
 fi
+
 if [ "$#" -gt 4 ]; then
     PROBLEM_SIZE=$5
+else
+    PROBLEM_SIZE=18
 fi
+PROBLEM_SIZE_STRING="--psize="$PROBLEM_SIZE
 
 # Set the number of directory controllers, with a maximum of 256
 if [ $NDIRS -eq -1 ]; then
@@ -119,16 +123,6 @@ if [ -d $OUTDIR ]; then
 fi
 mkdir -p $OUTDIR
 
-# Redirect stdout to file
-if [ $GARNETDEBUG -eq 1 ]; then
-    GARNETDEBUG_FLAGS="--debug-flags=RubyNetwork"
-    GARNETDEBUG_TOFILE="$OUTDIR/debug.txt"
-else
-    GARNETDEBUG_FLAGS=""
-    GARNETDEBUG_TOFILE=""
-    GARNETDEBUG_PIPE=""
-fi
-
 # Redirect stdout to /dev/null
 if [ $HIDESTDOUT -eq 1 ]; then
     HIDESTDOUT="-r --stdout-file=/dev/null"
@@ -146,9 +140,9 @@ fi
 # Set environment variable for recognizing simulation type in gem5 source files
 export GEM5SIMTYPE=GarnetStandalone
 
-RUNCMD="./build/X86_MESI_Two_Level/gem5.fast -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS \
+RUNCMD="./build/X86_MESI_Two_Level/gem5.fast -v $HIDEWARNERROR $HIDESTDOUT \
 -d $OUTDIR configs/example/fft_benchmark.py \
---psize=$PROBLEM_SIZE \
+$PROBLEM_SIZE_STRING \
 --num-cpus=$NCPUS \
 --num-dirs=$NDIRS \
 --cpu-type=TimingSimpleCPU \
@@ -157,7 +151,7 @@ RUNCMD="./build/X86_MESI_Two_Level/gem5.fast -v $HIDEWARNERROR $HIDESTDOUT $GARN
 --l1i_size=32kB \
 --l1d_assoc=4 \
 --l1i_assoc=4 \
---num-l2caches=$NDIRS \
+--num-l2caches=$NCPUS \
 --l2_size=1024kB \
 --l2_assoc=8 \
 --ruby \
@@ -174,29 +168,18 @@ $CONCENTRATION_FACTOR \
 $USE_ESCAPE_VC"
 
 redirect_cmd() {
-    if [ $GARNETDEBUG -eq 1 ]; then
-        "$@" > "$GARNETDEBUG_TOFILE"
-        return $?
-    else
-        "$@"
-        return $?
-    fi
+    "$@"
+    return $?
 }
 
 redirect_cmd $RUNCMD
 
-# Simulation output parsing
-EXITCODE=$?
-if [ $GARNETDEBUG -eq 1 ]; then
-    python grepdebug.py "$GARNETDEBUG_TOFILE"
-fi
-
-if [ $EXITCODE -eq 0 ]; then
+if [ $? -eq 0 ]; then
     # Copy network-related stats to network_stats.txt
     python grepnetworkstats.py $OUTDIR
     
-    # Plot latency
-    #python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
+    # Generate topology.png from topology.tex
+    ./tex2png $OUTDIR > /dev/null
     
     # Calculate power and area with DSENT
     #./rundsent $OUTDIR

@@ -96,6 +96,7 @@ OutputUnit::has_credit(int out_vc)
 
 // Escape VC deadlock avoidance for Ring topology.
 // VC=0 is acyclic escape VC; other VC's can be cyclic.
+// Not functioning correctly.
 bool
 OutputUnit::escapevc_allowed(RouteInfo route)
 {

@@ -189,11 +189,11 @@ def setConfigParameter(config_file, string, new_val):
     try:
         new_string = string + (" " * max(1, 40 - len(string)))
         new_string += "= {0}".format(new_val)
-        command = "sed -i 's/{0}.*=.*/{1}/' {2}".format(string,
-                      new_string, config_file)
+        command = ["sed", "-i", "s/{0}.*=.*/{1}/".format(string, new_string),
+                   config_file]
 
-        proc = subprocess.Popen(command, shell=True)
-        proc.wait()
+        proc = subprocess.Popen(command)
+        proc.communicate()
     except OSError:
         pass
 
@@ -229,7 +229,7 @@ def computeIntLinkPower(num_cycles, int_wire_length, int_links, stats_file,
         dsent_out = dsent.computeLinkPower(frequency)
         results.append(dict(dsent_out))
 
-        print("%s.network_link wire length: %f mm" % (link, int_wire_length * 100))
+        print("%s.network_link wire length: %f mm" % (link, wire_length * 100))
 
         dsent.finalize()
 

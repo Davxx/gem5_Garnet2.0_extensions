@@ -2,30 +2,9 @@
 
 MAXLATENCY=300
 
-for ((k=15;k<25;k+=4))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 1024 32 1 FlattenedButterfly $i uniform_random 10000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        break
-    fi
-done
+./rungarnet 1024 16 4 FlattenedButterfly 0.19 uniform_random 10000
 
-./rungarnet 1024 16 4 FlattenedButterfly 0.01 uniform_random 10000
+./rungarnet 1024 32 1 FlattenedButterfly 0.19 uniform_random 10000
 
-EXTRA=1
-for ((k=11;k<95;k+=4))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 1024 16 4 FlattenedButterfly $i uniform_random 10000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        EXTRA=$(($EXTRA - 1))
-    fi
-    if [ $EXTRA -eq 0 ]; then
-        break
-    fi
-done
+./rungarnet 1024 32 1 FlattenedButterfly 0.21 uniform_random 10000
+

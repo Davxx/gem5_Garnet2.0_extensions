@@ -4,24 +4,14 @@ import os
 import subprocess
 
 # Class for generating Tikz topology code,
-# will be written to 'sim_output_directory/topo.tex'
-# If imagemagick is installed, the topology is written to 'sim_output_directory/topology.png'
+# will be written to 'sim_output_directory/topology.tex'
 
 class TikzTopology():
     def __init__(self, outdir, nrows, ncols):
         # Use different base names for texname and pngname
-        self.texname = "topo.tex"
-        self.pngname = "topology.png"
-        
-        # rm `self.texname`.* after successful PNG generation
-        self.cleanup = True 
-
+        self.texname = "topology.tex"
         self.tikzfile = None
         self.outdir = outdir
-
-        # Create output dir if it does not exist yet
-        if not os.path.isdir(self.outdir):
-            os.makedirs(self.outdir)
 
         node_dist = 1.5
         node_font = "\\Large"
@@ -66,25 +56,8 @@ class TikzTopology():
                 self.tikzfile.write(ln + "\n")
             except IOError:
                 self.tikzfile = None
-        
+
     def close(self):
         if not self.tikzfile.closed:
             self.write("    ;\n\\end{tikzpicture}\n\\end{figure}\n\end{document}\n")
             self.tikzfile.close()
-            
-            # Compile via pdflatex and convert to PNG
-            try:
-                basename = os.path.splitext(os.path.basename(self.texname))[0]
-                FNULL = open(os.devnull, 'w')
-                command = "pdflatex -halt-on-error " + self.texname + "; if convert -density 300 " + basename\
-                          + ".pdf -trim -bordercolor White -border 10x10 +repage " + self.pngname + "; then\n  sleep 1\n"
-                
-                if self.cleanup:
-                    command += "  rm " + basename + ".*\n"
-                
-                command += "fi"
-
-                proc = subprocess.Popen(command, shell=True, cwd=self.outdir, stdout=FNULL)
-                proc.wait()
-            except OSError:
-                pass
