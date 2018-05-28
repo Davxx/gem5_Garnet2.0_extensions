@@ -160,7 +160,8 @@ QueryString                             = \\
     NddPower>>RepeatedLink:Leakage@0 \\
     Area>>RepeatedLink:Active@0 \\
 
-# Injection rate - will be overwritten by on-chip-network-power-area-2.0.py
+# Variables marked (*) will be overwritten by on-chip-network-power-area-2.0.py
+# Injection rate (*)
 InjectionRate                           = 1
 # Evaluation string
 EvaluateString                          = \\
@@ -201,10 +202,10 @@ WireWidthMultiplier                     = 1.0
 # Wire spacing multiplier
 WireSpacingMultiplier                   = 1.0
 
-# Wire length (m) - will be overwritten by on-chip-network-power-area-2.0.py
+# Wire length (m) (*)
 WireLength                              = 1e-3
-# Delay of the wire (may not be 1.0 / Frequency)
-Delay                                   = 2e-9
+# Delay of the wire (may not be 1.0 / Frequency) (*)
+Delay                                   = 1e-9
 """.format(linkbits))
         except IOError:
             return None

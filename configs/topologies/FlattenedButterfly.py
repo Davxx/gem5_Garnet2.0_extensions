@@ -25,7 +25,8 @@ class FlattenedButterfly(SimpleTopology):
         if not self.tikz_out is None:
             self.tikz_out.write(ln)
 
-    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink, tikz_bend_right):
+    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, 
+                   IntLink, tikz_bend_right, delay):
         # Makes a bidirectional link between self.routers src_id and dst_id
 
         if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
@@ -36,14 +37,14 @@ class FlattenedButterfly(SimpleTopology):
                                           dst_node=self.routers[dst_id],
                                           src_outport=src_outport,
                                           dst_inport=dst_inport,
-                                          latency=self.link_latency,
+                                          latency=self.link_latency * delay,
                                           weight=weight))
             self.int_links.append(IntLink(link_id=self.link_count + 1,
                                           src_node=self.routers[dst_id],
                                           dst_node=self.routers[src_id],
                                           src_outport=dst_inport,
                                           dst_inport=src_outport,
-                                          latency=self.link_latency,
+                                          latency=self.link_latency * delay,
                                           weight=weight))
             self.link_count += 2
 
@@ -179,14 +180,14 @@ class FlattenedButterfly(SimpleTopology):
                     dst_id = dst_col + (row * ncols)
 
                     # Horizontal link (weight = 1)
-                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink, (row < nrows / 2))
+                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink, (row < nrows / 2), x)
 
                 for y in xrange(1, nrows):
                     dst_row = (row + y) % nrows
                     dst_id = col + (dst_row * ncols)
 
                     # Vertical link (weight = 2)
-                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink, (col >= ncols / 2))
+                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink, (col >= ncols / 2), y)
 
         if not self.tikz_out is None:
             self.tikz_out.close()

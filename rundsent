@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Script for running DSENT for a given simulation output directory
+# Get parameter arguments
+OUTDIR=""
+if [ "$#" -gt 0 ]; then
+    OUTDIR=$1
+else
+    echo "Please specify a simulation output directory"
+    exit
+fi
+
+if [ ! -f $OUTDIR/stats.txt ]; then
+    echo "$OUTDIR/stats.txt not found"
+    exit
+fi
+
+DSENT_OUT=$OUTDIR/dsent_out.txt
+echo "Writing DSENT power and area model to: $DSENT_OUT"
+python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
+

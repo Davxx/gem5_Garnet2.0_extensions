@@ -217,9 +217,7 @@ if [ $EXITCODE -eq 0 ]; then
     python plotlatency.py $OUTDIR $LATENCY_FILE $INJRATE
     
     # Calculate power and area with DSENT
-    DSENT_OUT=$OUTDIR/dsent_out.txt
-    #echo "Writing DSENT power and area model to: $DSENT_OUT"
-    #python util/on-chip-network-power-area-2.0.py $OUTDIR > $DSENT_OUT
+    #./rundsent $OUTDIR
 else
     rmdir $OUTDIR &> /dev/null
 fi

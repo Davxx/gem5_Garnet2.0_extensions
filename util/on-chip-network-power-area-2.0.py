@@ -198,52 +198,52 @@ def setConfigParameter(config_file, string, new_val):
         pass
 
 ## Compute the power consumed by the given int_links
-def computeIntLinkPower(num_cycles, int_links, stats_file, config,
-                        link_config_file, num_links=1e9):
-    power = None
+def computeIntLinkPower(num_cycles, int_wire_length, int_links, stats_file,
+                        config, link_config_file, num_links=1e9):
+    results = []
     injrate = getStatsForString(stats_file, "system.ruby.network.int_link_utilization")\
                                 / float(num_cycles) / len(int_links)
 
     assert(injrate > 0.0)
-
-    # Set injection rate in link config file
-    setConfigParameter(link_config_file, "InjectionRate", injrate)
-
-    dsent.initialize(link_config_file)
 
     for (i, link) in enumerate(int_links):
         if i + 1 > num_links:
             break
 
         frequency = getClock(link + ".network_link", config)
+        delay = config.getint(link, "latency")
+        wire_length = delay * int_wire_length
+
+        # Set injection rate, delay and wire length in link config file
+        setConfigParameter(link_config_file, "InjectionRate", injrate)
+        setConfigParameter(link_config_file, "Delay", delay * 1e-9)
+        setConfigParameter(link_config_file, "WireLength", wire_length)
+
+        dsent.initialize(link_config_file)
 
         if num_links == 1:
             print("\nSingle int_link power:")
         else:
             print("\n%s.network_link power: " % link)
 
+        dsent_out = dsent.computeLinkPower(frequency)
+        results.append(dict(dsent_out))
 
-        power = dsent.computeLinkPower(frequency)
+        print("%s.network_link wire length: %f mm" % (link, int_wire_length * 100))
 
-    dsent.finalize()
+        dsent.finalize()
 
-    # Return latest result
-    return power
+    return results
 
 ## Compute the power consumed by the given ext_links
-def computeExtLinkPower(num_cycles, ext_links, stats_file, config,
-                        link_config_file, num_links=1e9):
-    power = None
+def computeExtLinkPower(num_cycles, ext_wire_length, ext_links, stats_file,
+                        config, link_config_file, num_links=1e9):
+    results = []
     single_link_utilization = getStatsForString(stats_file, "system.ruby.network.ext_in_link_utilization")
     single_link_utilization += getStatsForString(stats_file, "system.ruby.network.ext_out_link_utilization")
     injrate = single_link_utilization / float(num_cycles) / (len(ext_links) * 2)
 
     assert(injrate > 0.0)
-
-    # Set injection rate in link config file
-    setConfigParameter(link_config_file, "InjectionRate", injrate)
-
-    dsent.initialize(link_config_file)
 
     i = 1
     for link in ext_links:
@@ -251,89 +251,94 @@ def computeExtLinkPower(num_cycles, ext_links, stats_file, config,
             break
 
         frequency = getClock(link + ".network_links0", config)
+        delay = config.getint(link, "latency")
+
+        # Set injection rate, delay and wire length in link config file
+        setConfigParameter(link_config_file, "InjectionRate", injrate)
+        setConfigParameter(link_config_file, "Delay", delay * 1e-9)
+        setConfigParameter(link_config_file, "WireLength", ext_wire_length)
+
+        dsent.initialize(link_config_file)
 
         if num_links == 1:
             print("\nSingle ext_link power:")
         else:
             print("\n%s.network_links0 power: " % link)
 
-        power = dsent.computeLinkPower(frequency)
-        i += 1
+        dsent_out = dsent.computeLinkPower(frequency)
+        results.append(dict(dsent_out))
 
+        print("%s.network_links0 wire length: %f mm" % (link, ext_wire_length * 100))
+
+        i += 1
         if i > num_links:
             break
 
         frequency = getClock(link + ".network_links1", config)
         print("\n%s.network_links1 power: " % link)
 
-        power = dsent.computeLinkPower(frequency)
+        dsent_out = dsent.computeLinkPower(frequency)
+        results.append(dict(dsent_out))
+
+        print("%s.network_links1 wire length: %f mm" % (link, ext_wire_length * 100))
+
+        dsent.finalize()
         i += 1
 
-    dsent.finalize()
-
-    # Return latest result
-    return power
+    return results
 
 ## Compute total link power consumption, assuming that each link has a power
 ## model equal to single_link_power
 def computeTotalLinkPower(num_cycles, num_routers, int_wire_length,
                           ext_wire_length, int_links, ext_links,
                           stats_file, config, link_config_file):
-    # Set int_link wire length in link config file
-    setConfigParameter(link_config_file, "WireLength", int_wire_length)
 
-    # Compute the power consumed by a single int_link, since all links
-    # currently have the same power model
-    int_dsent_out = computeIntLinkPower(num_cycles, int_links, stats_file,
-                        config, link_config_file, num_links=1)
-    int_single_link_power = dict(int_dsent_out)
+    # Compute the power consumed by for each int_link
+    int_dsent_out = computeIntLinkPower(num_cycles, int_wire_length, int_links,
+                                        stats_file, config, link_config_file)
 
-    # Set ext_link wire length in link config file
-    setConfigParameter(link_config_file, "WireLength", ext_wire_length)
-
-    # Compute the power consumed by a single ext_link, since all links
-    # currently have the same power model
-    ext_dsent_out = computeExtLinkPower(num_cycles, ext_links, stats_file,
-                        config, link_config_file, num_links=1)
-    ext_single_link_power = dict(ext_dsent_out)
-
-    print("\nint_link wire length: %f mm" % (int_wire_length * 100))
-    print("ext_link wire length: %f mm" % (ext_wire_length * 100))
+    # Compute the power consumed by for each ext_link
+    ext_dsent_out = computeExtLinkPower(num_cycles, ext_wire_length, ext_links,
+                                        stats_file, config, link_config_file)
 
     # int_links are defined unidirectionally, ext_links bidirectionally
     int_num_links = len(int_links)
     ext_num_links = len(ext_links) * 2
     total_num_links = int_num_links + ext_num_links
 
-    int_single_dynamic = 0.0
-    int_single_leakage = 0.0
-    ext_single_dynamic = 0.0
-    ext_single_leakage = 0.0
+    int_dynamic = 0.0
+    int_leakage = 0.0
+    ext_dynamic = 0.0
+    ext_leakage = 0.0
 
-    # Get power consumption for a single link
-    for k, v in int_single_link_power.iteritems():
-        if "Dynamic" in k:
-            int_single_dynamic = v
-        elif "Leakage" in k:
-            int_single_leakage = v
-    for k, v in ext_single_link_power.iteritems():
-        if "Dynamic" in k:
-            ext_single_dynamic = v
-        elif "Leakage" in k:
-            ext_single_leakage = v
+    # Calculate total int_link power consumption
+    int_sum = Counter()
+    for d in int_dsent_out:
+        int_sum.update(d)
+    int_sum = dict(int_sum)
 
-    if int_single_dynamic == 0.0 or ext_single_dynamic == 0.0:
-        # Power not found
-        return
+    # Calculate total ext_link power consumption
+    ext_sum = Counter()
+    for d in ext_dsent_out:
+        ext_sum.update(d)
+    ext_sum = dict(ext_sum)
 
     print("\nTotal number of links: %d" % total_num_links)
     print("                       %d bidirectional int_links" % (int_num_links / 2))
     print("                       %d bidirectional ext_links" % (ext_num_links / 2))
 
-    int_dynamic = int_single_dynamic * int_num_links
-    int_leakage = int_single_leakage * int_num_links
-    ext_dynamic = ext_single_dynamic * ext_num_links
-    ext_leakage = ext_single_leakage * ext_num_links
+    # Get dynamic and leakage total power consumptions
+    for k, v in int_sum.iteritems():
+        if "Dynamic" in k:
+            int_dynamic = v
+        elif "Leakage" in k:
+            int_leakage = v
+    for k, v in ext_sum.iteritems():
+        if "Dynamic" in k:
+            ext_dynamic = v
+        elif "Leakage" in k:
+            ext_leakage = v
+
     total_dynamic = int_dynamic + ext_dynamic
     total_leakage = int_leakage + ext_leakage
 
@@ -348,6 +353,8 @@ def computeTotalLinkPower(num_cycles, num_routers, int_wire_length,
     print("\nTotal power for all links:")
     print("    Dynamic power: %f" % total_dynamic)
     print("    Leakage power: %f" % total_leakage)
+
+    return (total_dynamic, total_leakage)
 
 ## Compute the power and area used for all routers
 def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
@@ -482,8 +489,9 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     # Print sum and total NoC area
     print("\nSum totals for all %d routers:" % len(routers))
     print("\n".join(sum_strings))
-    print("\nArea of one CPU in proportion to {0}: {1:f} mm^2".format(\
+    print("\nAssumed area of one CPU in proportion to {0}: {1:f} mm^2".format(\
               cpu_model_name, cpu_area * 1e6))
+    print("Assumed die size excluding NoC: {0:f} mm^2".format(num_cpus * cpu_area * 1e6))
     print("\nTotal area of NoC including CPUs: %f mm^2" % (noc_area * 1e6))
     
     return (result_sum, int_wire_length, ext_wire_length)
@@ -510,15 +518,29 @@ def parseStats(stats_file, config, router_config_file, link_config_file,
     num_cycles = getStatsForString(stats_file, "sim_ticks")
 
     # Compute the power and area used by the routers
-    (result_sum, int_wire_length, ext_wire_length) = \
+    (routers_sum, int_wire_length, ext_wire_length) = \
         computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
                                     int_links, ext_links, num_cycles, num_cpus)
 
     # Compute total link power consumption
-    computeTotalLinkPower(num_cycles, len(routers), int_wire_length, ext_wire_length,
-                          int_links, ext_links,
-                          stats_file, config, link_config_file)
+    (link_dynamic, link_leakage) = \
+        computeTotalLinkPower(num_cycles, len(routers),
+                              int_wire_length, ext_wire_length,
+                              int_links, ext_links,
+                              stats_file, config, link_config_file)
 
+    # Calculate sum power for all routers + links
+    router_dynamic = 0.0
+    router_leakage = 0.0
+    for k, v in routers_sum.iteritems():
+        if "Total/Dynamic" in k:
+            router_dynamic = v
+        elif "Total/Leakage" in k:
+            router_leakage = v
+
+    print("\nSum power for all routers + links:")
+    print("    Dynamic power: %f" % (router_dynamic + link_dynamic))
+    print("    Leakage power: %f" % (router_leakage + link_leakage))
 
 # This script parses the config.ini and the stats.txt from a run and
 # generates the power and the area of the on-chip network using DSENT
