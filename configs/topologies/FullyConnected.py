@@ -29,6 +29,7 @@
 #          Tushar Krishna
 # Adapted by: David Smelt
 
+from math import sqrt
 import m5
 from m5.params import *
 from m5.objects import *
@@ -54,29 +55,31 @@ class FullyConnected(SimpleTopology):
         if not self.tikz_out is None:
             self.tikz_out.write(ln)
 
-    def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
-        # Makes a bidirectional link between self.routers src_id and dst_id
+    def makeBiLink(self, src_id, dst_id, nrows, ncols, IntLink):
+        # Makes a bidirectional link between routers src_id and dst_id
 
         if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
             self.lst_links.append((src_id, dst_id))
+            
+            # Calculate distance in proportion to a straight link
+            (src_x, src_y) = divmod(src_id, ncols)
+            (dst_x, dst_y) = divmod(dst_id, ncols)
+            x_diff = float(abs(src_x - dst_x))
+            y_diff = float(abs(src_y - dst_y))
+            distance = sqrt(x_diff ** 2 + y_diff ** 2)
 
             self.int_links.append(IntLink(link_id=self.link_count,
                                           src_node=self.routers[src_id],
                                           dst_node=self.routers[dst_id],
-                                          src_outport=src_outport,
-                                          dst_inport=dst_inport,
                                           latency=self.link_latency,
-                                          weight=weight))
+                                          weight=1))
             self.int_links.append(IntLink(link_id=self.link_count + 1,
                                           src_node=self.routers[dst_id],
                                           dst_node=self.routers[src_id],
-                                          src_outport=dst_inport,
-                                          dst_inport=src_outport,
                                           latency=self.link_latency,
-                                          weight=weight))
+                                          weight=1))
 
-            thick_line = "line width=1mm" if weight == 1 else ""
-            self.writeTikz("    ({0}) edge [{1}] node[] {{}} ({2})".format(src_id, thick_line, dst_id))
+            self.writeTikz("    ({0}) edge [line width=0.2mm] node[] {{}} ({1})".format(src_id, dst_id))
             self.link_count += 2
 
     def makeTopology(self, options, network, IntLink, ExtLink, Router):
@@ -187,23 +190,11 @@ class FullyConnected(SimpleTopology):
         self.int_links = []
         self.lst_links = []
 
-        # Create the mesh links.
-        for row in xrange(nrows):
-            for col in xrange(ncols):
-
-                if (col + 1 < ncols):
-                    # Horizontal link (weight = 1)
-
-                    src_id = col + (row * ncols)
-                    dst_id = (col + 1) + (row * ncols)
-                    self.makeBiLink(src_id, dst_id, 1, "East", "West", IntLink)
-
-                if (row + 1 < nrows):
-                    # Vertical link (weight = 2)
-
-                    src_id = col + (row * ncols)
-                    dst_id = col + ((row + 1) * ncols)
-                    self.makeBiLink(src_id, dst_id, 2, "North", "South", IntLink)
+        # Fully connect the mesh
+        for i in xrange(len(self.routers)):
+            for j in xrange(len(self.routers)):
+                if (i != j):
+                    self.makeBiLink(i, j, nrows, ncols, IntLink)
 
         if not self.tikz_out is None:
             self.tikz_out.close()

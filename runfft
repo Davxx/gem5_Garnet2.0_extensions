@@ -146,6 +146,7 @@ $PROBLEM_SIZE_STRING \
 --num-cpus=$NCPUS \
 --num-dirs=$NDIRS \
 --cpu-type=TimingSimpleCPU \
+--cpu-clock=1GHz \
 --mem-size=1GB \
 --l1d_size=32kB \
 --l1i_size=32kB \

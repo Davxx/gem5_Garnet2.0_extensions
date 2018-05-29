@@ -27,7 +27,7 @@ class FlattenedButterfly(SimpleTopology):
 
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, 
                    IntLink, tikz_bend_right, delay):
-        # Makes a bidirectional link between self.routers src_id and dst_id
+        # Makes a bidirectional link between routers src_id and dst_id
 
         if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
             self.lst_links.append((src_id, dst_id))

@@ -46,3 +46,49 @@ do
         break
     fi
 done
+
+EXTRA=5
+for ((k=1;k<95;k+=2))
+do
+    i=$(bc <<<"scale=2; $k / 100" )
+    i="0"$i
+    ./rungarnet 16 2 2 Ring $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
+    if [ $LATENCY -gt $MAXLATENCY ]; then
+        EXTRA=$(($EXTRA - 1))
+    fi
+    if [ $EXTRA -eq 0 ]; then
+        break
+    fi
+done
+
+EXTRA=5
+for ((k=1;k<95;k+=2))
+do
+    i=$(bc <<<"scale=2; $k / 100" )
+    i="0"$i
+    ./rungarnet 32 2 2 Ring $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
+    if [ $LATENCY -gt $MAXLATENCY ]; then
+        EXTRA=$(($EXTRA - 1))
+    fi
+    if [ $EXTRA -eq 0 ]; then
+        break
+    fi
+done
+
+EXTRA=5
+for ((k=1;k<95;k+=2))
+do
+    i=$(bc <<<"scale=2; $k / 100" )
+    i="0"$i
+    ./rungarnet 32 2 1 Ring $i uniform_random 20000
+    LATENCY=$(<m5out/latest_latency.txt)
+    if [ $LATENCY -gt $MAXLATENCY ]; then
+        EXTRA=$(($EXTRA - 1))
+    fi
+    if [ $EXTRA -eq 0 ]; then
+        break
+    fi
+done
+

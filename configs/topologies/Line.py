@@ -28,7 +28,7 @@ class Line(SimpleTopology):
             self.tikz_out.write(ln)
 
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
-        # Makes a bidirectional link between self.routers src_id and dst_id
+        # Makes a bidirectional link between routers src_id and dst_id
 
         # src->dst link
         self.int_links.append(IntLink(link_id=self.link_count,

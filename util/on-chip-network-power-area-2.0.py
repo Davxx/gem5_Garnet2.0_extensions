@@ -108,7 +108,7 @@ def getCoreAreaForCoreCount(num_cpus):
         cpu_model_core_count = 76
 
     if scale_die_size:
-        cpu_model_die_size *= float(cpu_model_core_count) / num_cpus
+        cpu_model_die_size *= float(num_cpus) / cpu_model_core_count
 
     core_area = (cpu_model_die_size / 1e6) / float(num_cpus)
 
@@ -160,6 +160,11 @@ def parseConfig(config_file):
 ## For the given object return clock as int 
 def getClock(obj, config):
     if config.get(obj, "type") == "SrcClockDomain":
+        clock = config.getint(obj, "clock")
+        if clock > 10:
+            # Clock defined in MHz
+            return int(config.getint(obj, "clock") * 1e6)
+        # Clock defined in GHz
         return int(config.getint(obj, "clock") * 1e9)
 
     if config.get(obj, "type") == "DerivedClockDomain":
@@ -405,9 +410,6 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
         xbar_injrate    = ext_nports * xbar_activity / float(num_cycles) / int_nports
         sa_injrate      = ext_nports * sw_activity_out / float(num_cycles) / int_nports
         
-        assert(buf_rd_injrate > 0.0 and buf_wr_injrate > 0.0)
-        assert(xbar_injrate > 0.0 and sa_injrate > 0.0)
-
         # Set injection rates in router config file
         setConfigParameter(router_config_file, "BufRdInjectionRate", buf_rd_injrate)
         setConfigParameter(router_config_file, "BufWrInjectionRate", buf_wr_injrate)
@@ -515,7 +517,19 @@ def getStatsForString(stats_file, key):
 ## Parse gem5 stats.txt file
 def parseStats(stats_file, config, router_config_file, link_config_file,
                routers, int_links, ext_links, num_cpus):
-    num_cycles = getStatsForString(stats_file, "sim_ticks")
+
+    # Get number of cycles for SE/FE simulation
+    num_cycles = getStatsForString(stats_file, "system.cpu0.numCycles")
+    if num_cycles == 0.0:
+        num_cycles = getStatsForString(stats_file, "system.cpu00.numCycles")
+    if num_cycles == 0.0:
+        num_cycles = getStatsForString(stats_file, "system.cpu000.numCycles")
+    if num_cycles == 0.0:
+        num_cycles = getStatsForString(stats_file, "system.cpu000.numCycles")
+
+    # Get number of cycles for Garnet_standalone simulation
+    if num_cycles == 0.0:
+        num_cycles = getStatsForString(stats_file, "sim_ticks")
 
     # Compute the power and area used by the routers
     (routers_sum, int_wire_length, ext_wire_length) = \

@@ -55,7 +55,7 @@ class Mesh_XY(SimpleTopology):
             self.tikz_out.write(ln)
 
     def makeBiLink(self, src_id, dst_id, weight, src_outport, dst_inport, IntLink):
-        # Makes a bidirectional link between self.routers src_id and dst_id
+        # Makes a bidirectional link between routers src_id and dst_id
 
         if not (src_id, dst_id) in self.lst_links and not (dst_id, src_id) in self.lst_links:
             self.lst_links.append((src_id, dst_id))
@@ -187,7 +187,7 @@ class Mesh_XY(SimpleTopology):
         self.int_links = []
         self.lst_links = []
 
-        # Create the mesh links.
+        # Create the mesh links
         for row in xrange(nrows):
             for col in xrange(ncols):
 
