@@ -14,5 +14,5 @@ for outdir in "$@"; do
     fi
     DSENT_OUT=$outdir/dsent_out.txt
     echo "Writing DSENT power and area model to: $DSENT_OUT"
-    python util/on-chip-network-power-area-2.0.py $outdir > $DSENT_OUT
+    python util/on-chip-network-power-area-2.0.py $outdir &> $DSENT_OUT
 done

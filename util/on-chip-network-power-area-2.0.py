@@ -110,7 +110,10 @@ def getCoreAreaForCoreCount(num_cpus):
     if scale_die_size:
         cpu_model_die_size *= float(num_cpus) / cpu_model_core_count
 
-    core_area = (cpu_model_die_size / 1e6) / float(num_cpus)
+    cpu_area = (cpu_model_die_size / 1e6) / float(num_cpus)
+    
+    # Assume all models encompass an uncore portion of 30% of the CPU area
+    core_area = 0.7 * cpu_area
 
     return (core_area, cpu_model_name)
 
@@ -203,7 +206,7 @@ def setConfigParameter(config_file, string, new_val):
         pass
 
 ## Compute the power consumed by the given int_links
-def computeIntLinkPower(num_cycles, int_wire_length, int_links, stats_file,
+def computeIntLinkPower(num_cycles, int_wire_length, wire_delay_scale, int_links, stats_file,
                         config, link_config_file, num_links=1e9):
     results = []
     injrate = getStatsForString(stats_file, "system.ruby.network.int_link_utilization")\
@@ -216,13 +219,18 @@ def computeIntLinkPower(num_cycles, int_wire_length, int_links, stats_file,
             break
 
         frequency = getClock(link + ".network_link", config)
-        delay = config.getint(link, "latency")
-        wire_length = delay * int_wire_length
+        
+        # Multiply wire length by 'latency' for FlattenedButterfly, which is
+        # set to the factored distance between routers
+        router_distance = config.getint(link, "latency")
+        wire_length = router_distance * int_wire_length
 
         # Set injection rate, delay and wire length in link config file
         setConfigParameter(link_config_file, "InjectionRate", injrate)
-        setConfigParameter(link_config_file, "Delay", delay * 1e-9)
         setConfigParameter(link_config_file, "WireLength", wire_length)
+        
+        # Calculate and set delay in link config file
+        setConfigParameter(link_config_file, "Delay", wire_length * wire_delay_scale * 1e-9)
 
         dsent.initialize(link_config_file)
 
@@ -241,7 +249,7 @@ def computeIntLinkPower(num_cycles, int_wire_length, int_links, stats_file,
     return results
 
 ## Compute the power consumed by the given ext_links
-def computeExtLinkPower(num_cycles, ext_wire_length, ext_links, stats_file,
+def computeExtLinkPower(num_cycles, ext_wire_length, wire_delay_scale, ext_links, stats_file,
                         config, link_config_file, num_links=1e9):
     results = []
     single_link_utilization = getStatsForString(stats_file, "system.ruby.network.ext_in_link_utilization")
@@ -260,7 +268,7 @@ def computeExtLinkPower(num_cycles, ext_wire_length, ext_links, stats_file,
 
         # Set injection rate, delay and wire length in link config file
         setConfigParameter(link_config_file, "InjectionRate", injrate)
-        setConfigParameter(link_config_file, "Delay", delay * 1e-9)
+        setConfigParameter(link_config_file, "Delay", ext_wire_length * wire_delay_scale * 1e-9)
         setConfigParameter(link_config_file, "WireLength", ext_wire_length)
 
         dsent.initialize(link_config_file)
@@ -294,17 +302,28 @@ def computeExtLinkPower(num_cycles, ext_wire_length, ext_links, stats_file,
 
 ## Compute total link power consumption, assuming that each link has a power
 ## model equal to single_link_power
-def computeTotalLinkPower(num_cycles, num_routers, int_wire_length,
+def computeTotalLinkPower(num_cycles, num_cpus, num_routers, int_wire_length,
                           ext_wire_length, int_links, ext_links,
                           stats_file, config, link_config_file):
 
+    # Set wire delay factor according to ITRS projections
+    wire_delay_proj = "ITRS projected estimated wire delay for 14 nm CMOS: 1.0 ns/mm"
+    wire_delay_scale = 1.0
+    if num_cpus > 76:
+        wire_delay_proj = "ITRS projected estimated wire delay for 10 nm CMOS: 33.8 ns/mm"
+        wire_delay_scale = 33.8
+
+    print("\nUsing " + wire_delay_proj)
+
     # Compute the power consumed by for each int_link
-    int_dsent_out = computeIntLinkPower(num_cycles, int_wire_length, int_links,
-                                        stats_file, config, link_config_file)
+    int_dsent_out = computeIntLinkPower(num_cycles, int_wire_length, wire_delay_scale,
+                                        int_links, stats_file, config,
+                                        link_config_file)
 
     # Compute the power consumed by for each ext_link
-    ext_dsent_out = computeExtLinkPower(num_cycles, ext_wire_length, ext_links,
-                                        stats_file, config, link_config_file)
+    ext_dsent_out = computeExtLinkPower(num_cycles, ext_wire_length, wire_delay_scale,
+                                        ext_links, stats_file, config,
+                                        link_config_file)
 
     # int_links are defined unidirectionally, ext_links bidirectionally
     int_num_links = len(int_links)
@@ -462,19 +481,21 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
         num_horizontal_cpus = num_cpus / num_vertical_cpus
 
     # Assume size of a single core based on limited models
-    (cpu_area, cpu_model_name) = getCoreAreaForCoreCount(num_cpus)
+    (core_area, cpu_model_name) = getCoreAreaForCoreCount(num_cpus)
 
-    # Assume this external link wire_length:
-    ext_wire_length = 0.1 * sqrt(cpu_area)
+    # Cache and directory controllers are assumed to be located at a 45 degree
+    # angle from the router at a distance of 0.1 * sqrt(core_area)
+    # => set external link wire length to:
+    ext_wire_length = 0.1 * sqrt(core_area)
 
     noc_area = 0.0
     int_wire_length = 0.0
 
     # Calculate NoC area
     noc_area_x = nrows * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
-                 + num_vertical_cpus * sqrt(cpu_area)
+                 + num_vertical_cpus * sqrt(core_area)
     noc_area_y = ncols * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
-                 + num_horizontal_cpus * sqrt(cpu_area)
+                 + num_horizontal_cpus * sqrt(core_area)
     noc_area = noc_area_x * noc_area_y
 
     # Calculate internal link wire length
@@ -491,9 +512,10 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     # Print sum and total NoC area
     print("\nSum totals for all %d routers:" % len(routers))
     print("\n".join(sum_strings))
-    print("\nAssumed area of one CPU in proportion to {0}: {1:f} mm^2".format(\
-              cpu_model_name, cpu_area * 1e6))
-    print("Assumed die size excluding NoC: {0:f} mm^2".format(num_cpus * cpu_area * 1e6))
+    print("\nAssumed core area of one CPU in proportion to {0}: {1:f} mm^2".format(\
+              cpu_model_name, core_area * 1e6))
+    print("Assumed core area size excluding uncore and NoC: {0:f} mm^2".format(\
+              num_cpus * core_area * 1e6))
     print("\nTotal area of NoC including CPUs: %f mm^2" % (noc_area * 1e6))
     
     return (result_sum, int_wire_length, ext_wire_length)
@@ -538,7 +560,7 @@ def parseStats(stats_file, config, router_config_file, link_config_file,
 
     # Compute total link power consumption
     (link_dynamic, link_leakage) = \
-        computeTotalLinkPower(num_cycles, len(routers),
+        computeTotalLinkPower(num_cycles, num_cpus, len(routers),
                               int_wire_length, ext_wire_length,
                               int_links, ext_links,
                               stats_file, config, link_config_file)

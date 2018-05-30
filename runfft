@@ -155,16 +155,7 @@ $PROBLEM_SIZE_STRING \
 --num-l2caches=$NCPUS \
 --l2_size=1024kB \
 --l2_assoc=8 \
---ruby \
---network=garnet2.0 \
---topology=$TOPOLOGY \
---mesh-rows=$NROWS \
---routing-algorithm=$ROUTINGALGORITHM \
---link-width-bits=$LINKWIDTHBITS \
---vcs-per-vnet=$NVCS \
---buffers-per-data-vc=$NBUFFERS_PER_DATA_VC \
---buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
---garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
+--ruby
 $CONCENTRATION_FACTOR \
 $USE_ESCAPE_VC"
 

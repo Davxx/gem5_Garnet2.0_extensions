@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 
-MAXLATENCY=300
+MAXLATENCY=400
 
-for ((k=3;k<95;k+=2))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 1024 16 4 Mesh_XY $i uniform_random 20000
-    LATENCY=$(<m5out/latest_latency.txt)
-    if [ $LATENCY -gt $MAXLATENCY ]; then
-        break
-    fi
-done
-
+./runfft 16 4 1 Mesh_XY 22
+./runfft 64 8 1 Mesh_XY 22
+./runfft 64 4 4 Mesh_XY 22
+./runfft 128 4 4 Mesh_XY 22
+./runfft 128 8 2 Mesh_XY 22
+./runfft 256 8 4 Mesh_XY 22
+./runfft 512 8 4 Mesh_XY 22
+./runfft 1024 16 4 Mesh_XY 22
