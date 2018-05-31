@@ -149,7 +149,6 @@ def parseConfig(config_file):
     num_cpus = 0
     children = config.get("system", "children")
     num_cpus = len(re.findall("cpu[0-9]+[0-9]*", children))
-
     assert(num_cpus > 0)
 
     routers = config.get("system.ruby.network", "routers").split()

@@ -34,7 +34,7 @@ NROWS=16
 TOPOLOGY=Mesh_XY
 INJRATE=0.4
 SYNTH=uniform_random
-NCYCLES=2000
+NCYCLES=20000
 ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
                         #   0: Weight-based table (shortest path)
