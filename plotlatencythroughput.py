@@ -1,6 +1,12 @@
 #!/usr/bin/python2
 #
-# Plot latency numbers for simulation stats in outdir to latency_file
+# Usage: ./plotlatencythroughput.py <root directory containing multiple
+#                                    simulation output directories>
+
+# Gets injection rate (offered throughput), reception rate (sustained throughput)
+# and latency numbers for all <subdirectories>/stats.txt.
+#
+# Will output to <root directory>/<formatted string>-latencythroughput.txt"
 
 import os, sys, re
 from ConfigParser import ConfigParser
@@ -22,7 +28,8 @@ def getStatsForString(stats_file, key):
     return 0.0
 
 if len(sys.argv) < 2:
-    print("Usage: %s <directory containing simulation directories> " % sys.argv[0])
+    print("Usage: {0:s}".format(sys.argv[0]) + " <root directory containing "
+          "simulation output directories>")
     sys.exit(0)
 
 rootdir = sys.argv[1]
@@ -80,16 +87,11 @@ for subdir, dirs, files in os.walk(rootdir):
                             / float(num_cpus) / num_cycles
 
             # Create file name for results
+            outfile = filter(lambda s: not (s[-7:]=="injrate"), outdir.split("-"))
+            outfile = "-".join(outfile)
+            outfile += "-latencythroughput.txt"
+            outfile = os.path.join(rootdir, outfile)
 
-            print outdir
-            print inj_rate, recep_rate, latency, "\n"
-            
-            
-
-#stats_file = os.path.join(outdir, "stats.txt")
-
-#
-
-#with open(latency_file, "a") as f:
-#    f.write("{0:f}   {1:f}\n".format(injrate, latency))
+            with open(outfile, "a") as f:
+                f.write("{0:f}   {1:f}   {2:f}\n".format(inj_rate, recep_rate, latency))
 

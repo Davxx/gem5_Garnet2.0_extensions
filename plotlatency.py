@@ -26,8 +26,9 @@ latest_latency_file = os.path.join(outdir, "../latest_latency.txt")
 
 latency = getStatsForString(stats_file, "system.ruby.network.average_packet_latency")
 
-with open(latency_file, "a") as f:
-    f.write("{0:f}   {1:f}\n".format(injrate, latency))
+if latency > -1:
+    with open(latency_file, "a") as f:
+        f.write("{0:f}   {1:f}\n".format(injrate, latency))
 
-with open(latest_latency_file, "w") as f:
-    f.write("{0:d}".format(int(latency)))
+    with open(latest_latency_file, "w") as f:
+        f.write("{0:d}".format(int(latency)))

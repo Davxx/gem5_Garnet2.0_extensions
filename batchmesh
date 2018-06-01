@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
-for ((k=87;k<=101;k+=2))
+cd /home/dav/sniper/benchmarks
+./dosplash2 fft large 32 haswell-bus
+sleep 10
+
+cd /home/dav/gem5
+
+./rungarnet 256 16 1 Mesh_XY 0.17 uniform_random 20000
+./rundsent m5out/Mesh_XY-256core-16x16-uniform_random-0.17injrate-20000cycles
+
+for ((k=55;k<=101;k+=2))
 do
     i=$(bc <<<"scale=2; $k / 100" )
     i="0"$i
@@ -8,6 +17,28 @@ do
     if [ $k -eq 101 ]; then
         i=1.0
     fi
-    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 20000
+    ./rungarnet 64 8 1 Mesh_XY $i shuffle 20000
 done
 
+for ((k=1;k<=101;k+=2))
+do
+    i=$(bc <<<"scale=2; $k / 100" )
+    i="0"$i
+    
+    if [ $k -eq 101 ]; then
+        i=1.0
+    fi
+    ./rungarnet 64 8 1 Mesh_XY $i transpose 20000
+done
+
+./rundsent m5out/aaa/Mesh/Mesh_XY-1024core-32x32-uniform_random-0.03injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-1024core-16x16-4cpus_per_router-uniform_random-0.05injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-512core-16x32-uniform_random-0.09injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-512core-8x16-4cpus_per_router-uniform_random-0.05injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-256core-8x8-4cpus_per_router-uniform_random-0.09injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-128core-8x16-uniform_random-0.17injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-128core-8x8-2cpus_per_router-uniform_random-0.15injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-64core-8x8-uniform_random-0.31injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-64core-4x4-4cpus_per_router-uniform_random-0.15injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-32core-4x8-uniform_random-0.33injrate-20000cycles
+./rundsent m5out/aaa/Mesh/Mesh_XY-16core-4x4-uniform_random-0.53injrate-20000cycles

@@ -32,7 +32,7 @@
 import string, sys, subprocess, os, re
 from ConfigParser import ConfigParser
 from collections import Counter
-from math import ceil, sqrt
+from math import sqrt
 
 # Compile DSENT to generate the Python module and then import it.
 # This script assumes it is executed from the gem5 root.

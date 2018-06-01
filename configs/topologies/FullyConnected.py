@@ -29,7 +29,7 @@
 #          Tushar Krishna
 # Adapted by: David Smelt
 
-from math import sqrt
+from math import ceil, sqrt
 import m5
 from m5.params import *
 from m5.objects import *
@@ -66,17 +66,17 @@ class FullyConnected(SimpleTopology):
             (dst_x, dst_y) = divmod(dst_id, ncols)
             x_diff = float(abs(src_x - dst_x))
             y_diff = float(abs(src_y - dst_y))
-            distance = sqrt(x_diff ** 2 + y_diff ** 2)
+            distance = ceil(sqrt(x_diff ** 2 + y_diff ** 2))
 
             self.int_links.append(IntLink(link_id=self.link_count,
                                           src_node=self.routers[src_id],
                                           dst_node=self.routers[dst_id],
-                                          latency=self.link_latency,
+                                          latency=self.link_latency * distance,
                                           weight=1))
             self.int_links.append(IntLink(link_id=self.link_count + 1,
                                           src_node=self.routers[dst_id],
                                           dst_node=self.routers[src_id],
-                                          latency=self.link_latency,
+                                          latency=self.link_latency * distance,
                                           weight=1))
 
             self.writeTikz("    ({0}) edge [line width=0.2mm] node[] {{}} ({1})".format(src_id, dst_id))
