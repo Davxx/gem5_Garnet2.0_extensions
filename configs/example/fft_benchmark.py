@@ -1,3 +1,5 @@
+# Original file: se.py:
+#
 # Copyright (c) 2012-2013 ARM Limited
 # All rights reserved.
 #
@@ -36,11 +38,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Steve Reinhardt
-
+# Author: Steve Reinhardt
+#
 # Simple test script
 #
 # "m5 test.py"
+#
+# Modified by David Smelt
 
 from __future__ import print_function
 
@@ -147,8 +151,8 @@ if options.simpoint_profile:
         fatal("SimPoint generation not supported with more than one CPUs")
 
 class FFT(Process):
-    cwd = '/home/dav/gem5/sniper_splash2/splash2/codes/kernels/fft'
-    executable = '/home/dav/gem5/sniper_splash2/splash2/codes/kernels/fft/FFT'
+    cwd = 'sniper_splash2/splash2/codes/kernels/fft'
+    executable = 'sniper_splash2/splash2/codes/kernels/fft/FFT'
     cmd = ['FFT', '-p', np, '-m{0:d}'.format(options.psize)]
 
 root = Root(full_system = False, system = system)

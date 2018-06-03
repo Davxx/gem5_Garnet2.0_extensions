@@ -23,7 +23,7 @@ NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
 LINKWIDTHBITS=512       # Width in bits for all links inside the network
 DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
-INJVNET=0              # Only inject in this vnet (0, 1 or 2);###############################################
+INJVNET=-1              # Only inject in this vnet (0, 1 or 2);
                         #   0 and 1 are 1-flit, 2 is 5-flit;
                         #   set to -1 to inject randomly in all vnets.
 CONCENTRATION_FACTOR=4  # Number of cpu's per router
@@ -43,8 +43,8 @@ ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
                         #   3: Adaptive (not implemented)
 
 # Send between specific router id's. -1: disable
-SENDER_ID=0
-DEST_ID=1
+SENDER_ID=-1
+DEST_ID=-1
 
 # Get parameter arguments
 if [ "$#" -gt 0 ] && [[ $1 =~ ^[0-9]+$ ]]; then
@@ -186,7 +186,6 @@ RUNCMD="./build/NULL/gem5.debug -v $HIDEWARNERROR $HIDESTDOUT $GARNETDEBUG_FLAGS
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
 --inj-vnet=$INJVNET \
 --tikz \
---num-packets-max=1 \
 $CONCENTRATION_FACTOR \
 $USE_ESCAPE_VC \
 $SEND_TO_ROUTER_IDS"

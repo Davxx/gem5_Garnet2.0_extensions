@@ -51,7 +51,7 @@ class SysConfig:
         if self.memsize:
             return self.memsize
         else:
-            return '128MB'
+            return '512MB'
 
     def disk(self):
         if self.diskname:
@@ -82,8 +82,9 @@ class SysConfig:
 # The first defined machine is the test system, the others are driving systems
 
 Benchmarks = {
-    'PovrayBench':  [SysConfig('povray-bench.rcS', '512MB', 'povray.img')],
-    'PovrayAutumn': [SysConfig('povray-autumn.rcS', '512MB', 'povray.img')],
+    'fft':              [SysConfig('fft.rcS', '512MB')],
+    'PovrayBench':      [SysConfig('povray-bench.rcS', '512MB', 'povray.img')],
+    'PovrayAutumn':     [SysConfig('povray-autumn.rcS', '512MB', 'povray.img')],
 
     'NetperfStream':    [SysConfig('netperf-stream-client.rcS'),
                          SysConfig('netperf-server.rcS')],

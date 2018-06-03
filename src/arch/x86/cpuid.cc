@@ -161,8 +161,10 @@ namespace X86ISA {
                         stringToRegister(vendorString + 8));
                 break;
               case FamilyModelStepping:
-                result = CpuidResult(0x00020f51, 0x00000805,
-                                     0xe7dbfbff, 0x04000209);
+                /*result = CpuidResult(0x00020f51, 0x00000805,
+                                     0xe7dbfbff, 0x04000209);*/
+                 result = CpuidResult(0x00020f51, 0x00000805,
+                                     0xe7dbfbff, 0x00000209);
                 break;
               case ExtendedFeatures:
                 result = CpuidResult(0x00000000, 0x01800000,

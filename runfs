@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+./build/X86_MESI_Two_Level/gem5.fast -v \
+--remote-gdb-port=0 \
+-d m5out/FStest1 configs/example/fs.py \
+--num-cpus=4 \
+--num-dirs=4 \
+--cpu-type=TimingSimpleCPU \
+--cpu-clock=1GHz \
+--mem-size=1GB \
+--l1d_size=32kB \
+--l1i_size=32kB \
+--l1d_assoc=4 \
+--l1i_assoc=4 \
+--num-l2caches=4 \
+--l2_size=1024kB \
+--l2_assoc=8 \
+--ruby
+

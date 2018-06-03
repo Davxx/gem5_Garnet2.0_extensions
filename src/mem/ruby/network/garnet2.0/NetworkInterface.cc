@@ -68,7 +68,7 @@ NetworkInterface::NetworkInterface(const Params *p)
 
     m_vc_allocator.resize(m_virtual_networks); // 1 allocator per vnet
     for (int i = 0; i < m_virtual_networks; i++) {
-        m_vc_allocator[i] = 1;
+        m_vc_allocator[i] = 0;
     }
 
     m_stall_count.resize(m_virtual_networks);

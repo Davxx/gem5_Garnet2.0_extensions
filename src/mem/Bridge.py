@@ -47,8 +47,8 @@ class Bridge(MemObject):
     cxx_header = "mem/bridge.hh"
     slave = SlavePort('Slave port')
     master = MasterPort('Master port')
-    req_size = Param.Unsigned(16, "The number of requests to buffer")
-    resp_size = Param.Unsigned(16, "The number of responses to buffer")
+    req_size = Param.Unsigned(64, "The number of requests to buffer")
+    resp_size = Param.Unsigned(64, "The number of responses to buffer")
     delay = Param.Latency('0ns', "The latency of this bridge")
     ranges = VectorParam.AddrRange([AllMemory],
                                    "Address ranges to pass through the bridge")
