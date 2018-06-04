@@ -1,14 +1,69 @@
 #!/usr/bin/env bash
 
-for ((k=1;k<=101;k+=2))
+for ((k=272;k<=278;k+=2))
 do
-    i=$(bc <<<"scale=2; $k / 100" )
+    i=$(bc <<<"scale=3; $k / 1000" )
     i="0"$i
     
     if [ $k -eq 101 ]; then
         i=1.0
     fi
-    ./rungarnet4 64 8 1 Mesh_XY $i uniform_random 200000
+    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 20000
+done
+
+for ((k=282;k<=288;k+=2))
+do
+    i=$(bc <<<"scale=3; $k / 1000" )
+    i="0"$i
+    
+    if [ $k -eq 101 ]; then
+        i=1.0
+    fi
+    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 20000
+done
+
+for ((k=292;k<=298;k+=2))
+do
+    i=$(bc <<<"scale=3; $k / 1000" )
+    i="0"$i
+    
+    if [ $k -eq 101 ]; then
+        i=1.0
+    fi
+    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 20000
+done
+
+for ((k=272;k<=278;k+=2))
+do
+    i=$(bc <<<"scale=3; $k / 1000" )
+    i="0"$i
+    
+    if [ $k -eq 101 ]; then
+        i=1.0
+    fi
+    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 200000
+done
+
+for ((k=282;k<=288;k+=2))
+do
+    i=$(bc <<<"scale=3; $k / 1000" )
+    i="0"$i
+    
+    if [ $k -eq 101 ]; then
+        i=1.0
+    fi
+    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 200000
+done
+
+for ((k=292;k<=298;k+=2))
+do
+    i=$(bc <<<"scale=3; $k / 1000" )
+    i="0"$i
+    
+    if [ $k -eq 101 ]; then
+        i=1.0
+    fi
+    ./rungarnet 64 8 1 Mesh_XY $i uniform_random 200000
 done
 
 exit

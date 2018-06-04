@@ -3,7 +3,7 @@
 # Script for running the Splash2 FFT benchmark in gem5 SE mode with a Garnet2.0
 # network
 #
-# Usage: ./runfft n_cpus n_rows concentration_factor topology_py_file M
+# Usage: ./runfft n_cpus n_rows concentration_factor topology_py_file M cpu_clock
 #
 #                 n_cpus: number of cpu's
 #                 n_rows: number of rows in the topology structure
@@ -12,28 +12,30 @@
 #                      M: problem size = 2^M data points, must be an even number
 #                           The base problem size for an up-to-64 processor
 #                           machine is 65,536 complex data points (M=16)
+#              cpu_clock: clock frequency for all cpu's
+#                           default: 1GHz
 
 # Defaults:
-PROBLEM_SIZE=18         # Problem size M
-HIDEWARNERROR=0         # Bool: hide warnings and errors
-HIDESTDOUT=0            # Bool: hide stdout
-NVCS=4                  # Number of virtual channels (VC) per virtual network
-NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
-NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
-LINKWIDTHBITS=512       # Width in bits for all links inside the network
-DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
-CONCENTRATION_FACTOR=4  # Number of cpu's per router
-NCPUS=16                # Number of cpu's
-NDIRS=-1                # Number of directory controllers, must <= NCPUS;
-                        #   set to -1 to equal the number of routers <= 256.
+PROBLEM_SIZE=18           # Problem size M
+HIDEWARNERROR=0           # Bool: hide warnings and errors
+HIDESTDOUT=0              # Bool: hide stdout
+NVCS=4                    # Number of virtual channels (VC) per virtual network
+NBUFFERS_PER_DATA_VC=8    # Number of buffers per data VC
+NBUFFERS_PER_CTRL_VC=1    # Number of buffers per control VC
+LINKWIDTHBITS=512         # Width in bits for all links inside the network
+DEADLOCKTHRESHOLD=5000000 # Network-level deadlock threshold
+CONCENTRATION_FACTOR=4    # Number of cpu's per router
+NCPUS=16                  # Number of cpu's
+NDIRS=-1                  # Number of directory controllers, must <= NCPUS;
+                          #   set to -1 to equal the number of routers <= 256.
 NROWS=4
 TOPOLOGY=Mesh_XY
-ROUTINGALGORITHM=0      # Routing_algorithm: routing algorithm in network,
-                        # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
-                        #   0: Weight-based table (shortest path)
-                        #   1: XY (for Mesh)
-                        #   2: Random (custom)
-                        #   3: Adaptive (not implemented)
+ROUTINGALGORITHM=0        # Routing_algorithm: routing algorithm in network,
+                          # implemented in src/mem/ruby/network/garnet2.0/RoutingUnit.cc:
+                          #   0: Weight-based table (shortest path)
+                          #   1: XY (for Mesh)
+                          #   2: Random (custom)
+                          #   3: Adaptive (not implemented)
 
 
 # Get parameter arguments
@@ -60,6 +62,12 @@ else
     PROBLEM_SIZE=18
 fi
 PROBLEM_SIZE_STRING="--psize="$PROBLEM_SIZE
+
+if [ "$#" -gt 5 ]; then
+    CLOCK=$6
+else
+    CLOCK=1GHz
+fi
 
 # Set the number of directory controllers, with a maximum of 256
 if [ $NDIRS -eq -1 ]; then
@@ -146,7 +154,7 @@ $PROBLEM_SIZE_STRING \
 --num-cpus=$NCPUS \
 --num-dirs=$NDIRS \
 --cpu-type=DerivO3CPU \
---cpu-clock=1GHz \
+--cpu-clock=$CLOCK \
 --mem-size=1GB \
 --l1d_size=32kB \
 --l1i_size=32kB \

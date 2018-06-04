@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#
+# Command for building X86 architecture with the MESI_Two_Level protocol
+NUM_CORES=$(grep -c ^processor /proc/cpuinfo)
+scons -j$NUM_CORES build/X86_MESI_Two_Level/gem5.fast PROTOCOL=MESI_Two_Level
