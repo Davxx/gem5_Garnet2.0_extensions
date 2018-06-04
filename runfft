@@ -98,7 +98,7 @@ fi
 # Recalculate ncols for concentration factor
 if [ $CONCENTRATION_FACTOR -gt 1 ]; then
     NCOLS=$(($NCPUS/$NROWS/$CONCENTRATION_FACTOR))
-    CONCENTRATION_STRING=$CONCENTRATION_FACTOR"-cpus_per_router"
+    CONCENTRATION_STRING="-"$CONCENTRATION_FACTOR"-cpus_per_router"
     CONCENTRATION_FACTOR="--concentration-factor="$CONCENTRATION_FACTOR
 else
     NCOLS=$(($NCPUS/$NROWS))
@@ -115,7 +115,7 @@ case "$ROUTINGALGORITHM" in
     *) RALGNAME=unknown_routing ;;
 esac
 
-OUTDIR="m5out/FFT-M"$PROBLEM_SIZE"-"$TOPOLOGY"-"$NCPUS"core-"$NROWS"x"$NCOLS""$CONCENTRATION_STRING
+OUTDIR="m5out/FFT-M"$PROBLEM_SIZE"-"$TOPOLOGY"-"$NCPUS"core-"$NROWS"x"$NCOLS""$CONCENTRATION_STRING"-"$CLOCK
 LATENCY_FILE=$OUTDIR"-latency.txt"
 
 # Generate output dir name
@@ -155,12 +155,13 @@ $PROBLEM_SIZE_STRING \
 --num-dirs=$NDIRS \
 --cpu-type=DerivO3CPU \
 --cpu-clock=$CLOCK \
+--ruby-clock=$CLOCK \
 --mem-size=1GB \
 --l1d_size=32kB \
 --l1i_size=32kB \
 --l1d_assoc=4 \
 --l1i_assoc=4 \
---num-l2caches=$NDIRS \
+--num-l2caches=$NCPUS \
 --l2_size=1024kB \
 --l2_assoc=8 \
 --ruby \
@@ -173,8 +174,7 @@ $PROBLEM_SIZE_STRING \
 --buffers-per-data-vc=$NBUFFERS_PER_DATA_VC \
 --buffers-per-ctrl-vc=$NBUFFERS_PER_CTRL_VC \
 --garnet-deadlock-threshold=$DEADLOCKTHRESHOLD \
-$CONCENTRATION_FACTOR \
-$USE_ESCAPE_VC"
+$CONCENTRATION_FACTOR"
 
 
 redirect_cmd() {

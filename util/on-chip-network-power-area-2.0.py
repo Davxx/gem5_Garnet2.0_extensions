@@ -164,8 +164,8 @@ def getClock(obj, config):
     if config.get(obj, "type") == "SrcClockDomain":
         clock = config.getint(obj, "clock")
         if clock > 10:
-            # Clock defined in MHz
-            return int(config.getint(obj, "clock") * 1e6)
+            # Clock defined in to num_ticks (=1e12) / frequency
+            return int((1000.0 / config.getint(obj, "clock")) * 1e9)
         # Clock defined in GHz
         return int(config.getint(obj, "clock") * 1e9)
 
@@ -224,12 +224,16 @@ def computeIntLinkPower(num_cycles, int_wire_length, wire_delay_scale, int_links
         router_distance = config.getint(link, "latency")
         wire_length = router_distance * int_wire_length
 
-        # Set injection rate, delay and wire length in link config file
+        # Calculate wire delay. wire_length is in meters and wire_delay_scale is in ns/mm
+        # => multiply their product by 1e-6 to get the delay in seconds
+        wire_delay = wire_length * wire_delay_scale * 1e-6
+
+        # Set injection rate, and wire length and wire delay in link config file
         setConfigParameter(link_config_file, "InjectionRate", injrate)
         setConfigParameter(link_config_file, "WireLength", wire_length)
+        setConfigParameter(link_config_file, "Delay", wire_delay)
         
         # Calculate and set delay in link config file
-        setConfigParameter(link_config_file, "Delay", wire_length * wire_delay_scale * 1e-9)
 
         dsent.initialize(link_config_file)
 
@@ -241,7 +245,7 @@ def computeIntLinkPower(num_cycles, int_wire_length, wire_delay_scale, int_links
         dsent_out = dsent.computeLinkPower(frequency)
         results.append(dict(dsent_out))
 
-        print("%s.network_link wire length: %f mm" % (link, wire_length * 100))
+        print("%s.network_link wire length: %f mm" % (link, wire_length * 1000))
 
         dsent.finalize()
 
@@ -265,10 +269,14 @@ def computeExtLinkPower(num_cycles, ext_wire_length, wire_delay_scale, ext_links
         frequency = getClock(link + ".network_links0", config)
         delay = config.getint(link, "latency")
 
-        # Set injection rate, delay and wire length in link config file
+        # Calculate wire delay. wire_length is in meters and wire_delay_scale is in ns/mm
+        # => multiply their product by 1e-6 to get the delay in seconds
+        wire_delay = ext_wire_length * wire_delay_scale * 1e-6
+
+        # Set injection rate, and wire length and wire delay in link config file
         setConfigParameter(link_config_file, "InjectionRate", injrate)
-        setConfigParameter(link_config_file, "Delay", ext_wire_length * wire_delay_scale * 1e-9)
         setConfigParameter(link_config_file, "WireLength", ext_wire_length)
+        setConfigParameter(link_config_file, "Delay", wire_delay)
 
         dsent.initialize(link_config_file)
 
@@ -280,7 +288,10 @@ def computeExtLinkPower(num_cycles, ext_wire_length, wire_delay_scale, ext_links
         dsent_out = dsent.computeLinkPower(frequency)
         results.append(dict(dsent_out))
 
-        print("%s.network_links0 wire length: %f mm" % (link, ext_wire_length * 100))
+        print("%s.network_links0 wire length: %f mm" % (link, ext_wire_length * 1000))
+
+        dsent.finalize()
+        dsent.initialize(link_config_file)
 
         i += 1
         if i > num_links:
@@ -292,7 +303,7 @@ def computeExtLinkPower(num_cycles, ext_wire_length, wire_delay_scale, ext_links
         dsent_out = dsent.computeLinkPower(frequency)
         results.append(dict(dsent_out))
 
-        print("%s.network_links1 wire length: %f mm" % (link, ext_wire_length * 100))
+        print("%s.network_links1 wire length: %f mm" % (link, ext_wire_length * 1000))
 
         dsent.finalize()
         i += 1
