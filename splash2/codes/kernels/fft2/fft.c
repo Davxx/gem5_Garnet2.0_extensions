@@ -1,4 +1,4 @@
-#line 228 "/splash2/codes/null_macros/c.m4.null.POSIX"
+#line 228 "/home/dav/gem5/splash2/codes/null_macros/c.m4.null.POSIX"
 
 #line 1 "fft.C"
 /*************************************************************************/

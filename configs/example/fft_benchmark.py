@@ -151,8 +151,10 @@ if options.simpoint_profile:
         fatal("SimPoint generation not supported with more than one CPUs")
 
 class FFT(Process):
-    cwd = 'sniper_splash2/splash2/codes/kernels/fft'
-    executable = 'sniper_splash2/splash2/codes/kernels/fft/FFT'
+#    cwd = 'sniper_splash2/splash2/codes/kernels/fft'
+#    executable = 'sniper_splash2/splash2/codes/kernels/fft/FFT'
+    cwd = '/home/dav/gem5/splash2/codes/kernels/fft2'
+    executable = '/home/dav/gem5/splash2/codes/kernels/fft2/FFT'
     cmd = ['FFT', '-p', np, '-m{0:d}'.format(options.psize)]
 
 root = Root(full_system = False, system = system)
@@ -177,7 +179,7 @@ if options.ruby:
     Ruby.create_system(options, False, system)
     assert(options.num_cpus == len(system.ruby._cpu_ports))
 
-    system.ruby.clk_domain = SrcClockDomain(clock = options.ruby_clock,
+    system.ruby.clk_domain = SrcClockDomain(clock = options.cpu_clock,
                                             voltage_domain = system.voltage_domain)
     for i in xrange(np):
         ruby_port = system.ruby._cpu_ports[i]
@@ -203,4 +205,12 @@ else:
     CacheConfig.config_cache(options, system)
     MemConfig.config_mem(options, system)
 
-Simulation.run(options, root, system, FutureClass)
+#Simulation.run(options, root, system, FutureClass)
+# instantiate configuration
+m5.instantiate()
+
+# simulate until program terminates
+exit_event = m5.simulate(10000000000000)
+
+print('Exiting @ tick', m5.curTick(), 'because', exit_event.getCause())
+

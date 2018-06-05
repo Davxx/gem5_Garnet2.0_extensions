@@ -149,7 +149,7 @@ fi
 export GEM5SIMTYPE=GarnetStandalone
 
 RUNCMD="./build/X86_MESI_Two_Level/gem5.fast -v $HIDEWARNERROR $HIDESTDOUT \
--d $OUTDIR configs/example/fft_benchmark.py \
+-d $OUTDIR configs/example/fft_benchmark.py -n $NCPUS \
 $PROBLEM_SIZE_STRING \
 --num-cpus=$NCPUS \
 --num-dirs=$NDIRS \
