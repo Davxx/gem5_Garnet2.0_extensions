@@ -272,7 +272,7 @@ def computeExtLinkPower(num_cycles, ext_wire_length, wire_delay_scale, ext_links
         # Calculate wire delay. wire_length is in meters and wire_delay_scale is in ns/mm
         # => multiply their product by 1e-6 to get the delay in seconds
         wire_delay = ext_wire_length * wire_delay_scale * 1e-6
-
+    
         # Set injection rate, and wire length and wire delay in link config file
         setConfigParameter(link_config_file, "InjectionRate", injrate)
         setConfigParameter(link_config_file, "WireLength", ext_wire_length)
@@ -498,22 +498,23 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     # => set external link wire length to:
     ext_wire_length = 0.1 * sqrt(core_area)
 
-    noc_area = 0.0
+    die_area = 0.0
     int_wire_length = 0.0
 
-    # Calculate NoC area
-    noc_area_x = nrows * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
+    # Calculate NoC area;
+    # The lateral space between a router and a CPU is ext_wire_length / sqrt(2)
+    die_area_x = nrows * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
                  + num_vertical_cpus * sqrt(core_area)
-    noc_area_y = ncols * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
+    die_area_y = ncols * (ext_wire_length / sqrt(2) + sqrt(max_router_area))\
                  + num_horizontal_cpus * sqrt(core_area)
-    noc_area = noc_area_x * noc_area_y
+    die_area = die_area_x * die_area_y
 
     # Calculate internal link wire length
     # For odd-dimensional topologies, take the largest dimension
-    int_wire_length = max(noc_area_y, noc_area_x) / (max(num_vertical_cpus,
+    int_wire_length = max(die_area_y, die_area_x) / (max(num_vertical_cpus,
                           num_horizontal_cpus) - 1.0)
 
-    assert(noc_area > 0.0 and int_wire_length > 0.0)
+    assert(die_area > 0.0 and int_wire_length > 0.0)
 
     # Generate output strings in the correct order
     for k, v in result_sum.iteritems():
@@ -526,7 +527,7 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
               cpu_model_name, core_area * 1e6))
     print("Assumed core area size excluding uncore and NoC: {0:f} mm^2".format(\
               num_cpus * core_area * 1e6))
-    print("\nTotal area of NoC including CPUs: %f mm^2" % (noc_area * 1e6))
+    print("\nTotal CPU die area: %f mm^2" % (die_area * 1e6))
     
     return (result_sum, int_wire_length, ext_wire_length)
 

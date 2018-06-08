@@ -22,7 +22,7 @@ NVCS=4                  # Number of virtual channels (VC) per virtual network
 NBUFFERS_PER_DATA_VC=8  # Number of buffers per data VC
 NBUFFERS_PER_CTRL_VC=1  # Number of buffers per control VC
 LINKWIDTHBITS=512       # Width in bits for all links inside the network
-DEADLOCKTHRESHOLD=50000 # Network-level deadlock threshold
+DEADLOCKTHRESHOLD=100000 # Network-level deadlock threshold
 INJVNET=-1              # Only inject in this vnet (0, 1 or 2);
                         #   0 and 1 are 1-flit, 2 is 5-flit;
                         #   set to -1 to inject randomly in all vnets.
