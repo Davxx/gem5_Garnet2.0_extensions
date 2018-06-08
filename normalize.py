@@ -36,14 +36,17 @@ with open("results", "rt") as f:
                 elif len(split) == 2:
                     idx.append(line.strip())
 
-print "Throughputs:"
-for (i, e) in enumerate(norm(throughput)):
-    print idx[i]
-    print round(e,2)
-print
 
 print "Latencies:"
 for (i, e) in enumerate(norm(latency)):
     print idx[i]
     print round(e,2)
 print
+
+
+print "Throughputs:"
+for (i, e) in enumerate(norm(throughput)):
+    print idx[i]
+    print round(e,2)
+print
+
