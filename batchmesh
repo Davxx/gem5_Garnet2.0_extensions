@@ -1,9 +1,26 @@
-#!/usr/bin/env bash
+#!/usr/bin/zsh
 
-for ((k=11;k<95;k+=4))
-do
-    i=$(bc <<<"scale=2; $k / 100" )
-    i="0"$i
-    ./rungarnet 64 4 4 Mesh_XY $i uniform_random 20000
+mn=$(echo 1.0)
+while [ 1 -eq 1 ]; do
+    load=$(awk '{print $1}'< /proc/loadavg)
+    if (($load < $mn)); then
+        ./rungarnet 128 4 8 Mesh_XY 0.01 uniform_random 20000
+        ./rungarnet 128 4 8 Mesh_XY 0.05 uniform_random 20000
+        ./rungarnet 128 4 8 Mesh_XY 0.09 uniform_random 20000
+        ./rungarnet 128 4 8 Mesh_XY 0.11 uniform_random 20000
+        ./rungarnet 128 4 8 Mesh_XY 0.15 uniform_random 20000
+        ./rungarnet 256 4 8 Mesh_XY 0.01 uniform_random 20000
+        ./rungarnet 256 4 8 Mesh_XY 0.03 uniform_random 20000
+        ./rungarnet 256 4 8 Mesh_XY 0.05 uniform_random 20000
+        ./rungarnet 256 4 8 Mesh_XY 0.07 uniform_random 20000
+        ./rungarnet 512 8 8 Mesh_XY 0.01 uniform_random 20000
+        ./rungarnet 512 8 8 Mesh_XY 0.03 uniform_random 20000
+        ./rungarnet 512 8 8 Mesh_XY 0.05 uniform_random 20000
+        ./rungarnet 512 8 8 Mesh_XY 0.07 uniform_random 20000
+        ./rungarnet 512 8 8 Mesh_XY 0.11 uniform_random 20000
+        ./rungarnet 256 4 8 Mesh_XY 0.11 uniform_random 20000
+        break
+    fi
+    sleep 10
 done
 

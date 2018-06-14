@@ -486,7 +486,7 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     num_vertical_cpus = nrows
     num_horizontal_cpus = ncols
     if concentration_factor > 1:
-        # For concentrated meshed, 2 CPUs per router are placed along the y-axis
+        # For concentrated meshes, 2 CPUs per router are placed along the y-axis
         num_vertical_cpus = num_cpus / (concentration_factor * 2)
         num_horizontal_cpus = num_cpus / num_vertical_cpus
 

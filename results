@@ -64,9 +64,56 @@ Mesh 8x16
 Mesh 4x8
 0.070000   0.069825   18.184776
 
+Mesh 4x4
+0.060000   0.059787   16.794533
+
 FlattenedButterfly 8x16
 0.670000   0.669391   20.651889
 
 FlattenedButterfly 4x8
 0.170000   0.169743   18.055027
+
+FlattenedButterfly 4x4
+0.080000   0.079828   13.985100
+
+
+
+256:
+
+Mesh 16x16
+
+
+Mesh 8x8
+
+
+Mesh 4x4
+
+
+FlattenedButterfly 16x16
+0.670000   0.669457   18.122724
+
+FlattenedButterfly 8x8
+0.170000   0.169858   19.811306
+
+FlattenedButterfly 4x4
+
+
+
+512:
+
+Mesh 8x16
+
+
+FlattenedButterfly 8x16
+
+
+
+
+1024:
+
+Mesh 16x16
+
+
+FlattenedButterfly 16x16
+
 

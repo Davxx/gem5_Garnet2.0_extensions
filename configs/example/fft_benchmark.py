@@ -151,10 +151,8 @@ if options.simpoint_profile:
         fatal("SimPoint generation not supported with more than one CPUs")
 
 class FFT(Process):
-#    cwd = 'sniper_splash2/splash2/codes/kernels/fft'
-#    executable = 'sniper_splash2/splash2/codes/kernels/fft/FFT'
-    cwd = '/home/dav/gem5/splash2/codes/kernels/fft2'
-    executable = '/home/dav/gem5/splash2/codes/kernels/fft2/FFT'
+    cwd = 'splash2/codes/kernels/fft2'
+    executable = 'splash2/codes/kernels/fft2/FFT'
     cmd = ['FFT', '-p', np, '-m{0:d}'.format(options.psize)]
 
 root = Root(full_system = False, system = system)
