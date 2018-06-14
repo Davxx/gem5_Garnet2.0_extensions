@@ -8,7 +8,7 @@ import subprocess
 # If imagemagick is installed, the topology is written to 'sim_output_directory/topology.png'
 
 class TopologyToDSENT():
-    def __init__(self, outdir, linkbits, nvcs, ncontrolbuffers, ndatabuffers):
+    def __init__(self, outdir, linkbits, nvcs, ncontrolbuffers, ndatabuffers, maxdim=5):
         # Use different base names for texname and pngname
         routercfg = "router.cfg"
         linkcfg = "electrical-link.cfg"
@@ -91,7 +91,7 @@ SwitchAllocator->ArbiterModel           = MatrixArbiter
 # clock tree model
 ClockTreeModel                          = BroadcastHTree
 # number of levels
-ClockTree->NumberLevels                 = 5
+ClockTree->NumberLevels                 = {4}
 # wire layer
 ClockTree->WireLayer                    = Global
 # wire width multiplier
@@ -148,7 +148,7 @@ EvaluateString                          = \\
     print "Area/Total: " total_area; \\
     print "Total/Dynamic power: " total_dynamic; \\
     print "Total/Leakage power: " $(NddPower>>Router:Leakage); \\
-""".format(linkbits, nvcs, ncontrolbuffers, ndatabuffers))
+""".format(linkbits, nvcs, ncontrolbuffers, ndatabuffers, maxdim))
 
             with open(os.path.join(outdir, linkcfg), "w") as linkfile:
                 linkfile.write("""

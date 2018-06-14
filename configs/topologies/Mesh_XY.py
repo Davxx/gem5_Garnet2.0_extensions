@@ -213,4 +213,4 @@ class Mesh_XY(SimpleTopology):
         # Generate router.cfg and electrical-link.cfg for DSENT
         dsent = TopologyToDSENT(m5.options.outdir, options.link_width_bits, 
                                 options.vcs_per_vnet, options.buffers_per_ctrl_vc,
-                                options.buffers_per_data_vc)
+                                options.buffers_per_data_vc, max(nrows, ncols))
