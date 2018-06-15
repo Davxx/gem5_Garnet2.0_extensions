@@ -113,9 +113,12 @@ def getCoreAreaForCoreCount(num_cpus):
     cpu_area = (cpu_model_die_size / 1e6) / float(num_cpus)
     
     # Assume all models encompass an uncore portion of 30% of the CPU area
-    core_area = 0.7 * cpu_area
+    uncore_fraction = 0.3
 
-    return (core_area, cpu_model_name)
+    core_area = (1 - uncore_fraction) * cpu_area
+    model_approx_core_size = (1 - uncore_fraction) * (cpu_model_die_size / cpu_model_core_count)
+
+    return (core_area, cpu_model_name, cpu_model_die_size, model_approx_core_size)
 
 # Parse gem5 config.ini file for the configuration parameters related to
 # the on-chip network.
@@ -319,7 +322,8 @@ def computeTotalLinkPower(num_cycles, num_cpus, num_routers, int_wire_length,
     # Set wire delay factor according to ITRS projections
     wire_delay_proj = "ITRS projected estimated wire delay for 14 nm CMOS: 1.0 ns/mm"
     wire_delay_scale = 1.0
-    if num_cpus > 76:
+    #if num_cpus > 76:
+    if num_cpus >= 64:
         wire_delay_proj = "ITRS projected estimated wire delay for 10 nm CMOS: 33.8 ns/mm"
         wire_delay_scale = 33.8
 
@@ -390,7 +394,7 @@ def computeTotalLinkPower(num_cycles, num_cpus, num_routers, int_wire_length,
 
     return (total_dynamic, total_leakage)
 
-## Compute the power and area used for all routers
+## Compute the power and area used for all routers and the CPU die area
 def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
                               int_links, ext_links, num_cycles, num_cpus):
     results = []
@@ -491,7 +495,7 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
         num_horizontal_cpus = num_cpus / num_vertical_cpus
 
     # Assume size of a single core based on limited models
-    (core_area, cpu_model_name) = getCoreAreaForCoreCount(num_cpus)
+    (core_area, model_name, model_die_size, model_core_size) = getCoreAreaForCoreCount(num_cpus)
 
     # Cache and directory controllers are assumed to be located at a 45 degree
     # angle from the router at a distance of 0.1 * sqrt(core_area)
@@ -520,14 +524,18 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     for k, v in result_sum.iteritems():
         sum_strings[getResultKey(k)] = str(k) + str(v)
 
-    # Print sum and total NoC area
+    # Print sum totals and CPU die area
     print("\nSum totals for all %d routers:" % len(routers))
     print("\n".join(sum_strings))
-    print("\nAssumed core area of one CPU in proportion to {0}: {1:f} mm^2".format(\
-              cpu_model_name, core_area * 1e6))
-    print("Assumed core area size excluding uncore and NoC: {0:f} mm^2".format(\
-              num_cpus * core_area * 1e6))
-    print("\nTotal CPU die area: %f mm^2" % (die_area * 1e6))
+    
+    print("\nDie area model scaled in proportion to a {0}:".format(model_name))
+    print("\twhich has:")
+    print("\t\tActual die area: {0:f} mm^2".format(model_die_size))
+    print("\t\tApproximated core area: {0:f} mm^2".format(model_core_size))
+    print("\n\tCore area of one CPU: {0:f} mm^2".format(core_area * 1e6))
+    print("\tTotal core area excluding uncore and NoC: {0:f} mm^2".format(\
+        num_cpus * core_area * 1e6))
+    print("\tTotal CPU die area: {0:f} mm^2".format(die_area * 1e6))
     
     return (result_sum, int_wire_length, ext_wire_length)
 
