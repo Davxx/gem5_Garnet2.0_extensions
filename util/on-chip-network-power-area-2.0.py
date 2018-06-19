@@ -529,10 +529,10 @@ def computeRouterPowerAndArea(routers, stats_file, config, router_config_file,
     print("\n".join(sum_strings))
     
     print("\nDie area model scaled in proportion to a {0}:".format(model_name))
-    print("\twhich has:")
-    print("\t\tActual die area: {0:f} mm^2".format(model_die_size))
+    print("\twhich amounts to:")
+    print("\t\tDie area: {0:f} mm^2".format(model_die_size))
     print("\t\tApproximated core area: {0:f} mm^2".format(model_core_size))
-    print("\n\tCore area of one CPU: {0:f} mm^2".format(core_area * 1e6))
+    print("\n\tScaled core area of one CPU: {0:f} mm^2".format(core_area * 1e6))
     print("\tTotal core area excluding uncore and NoC: {0:f} mm^2".format(\
         num_cpus * core_area * 1e6))
     print("\tTotal CPU die area: {0:f} mm^2".format(die_area * 1e6))
