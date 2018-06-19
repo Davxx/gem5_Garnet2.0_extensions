@@ -1,10 +1,10 @@
 #!/usr/bin/zsh
 
-mn=$(echo 1.0)
+mn=$(echo 0.5)
 while [ 1 -eq 1 ]; do
     load=$(awk '{print $1}'< /proc/loadavg)
     if (($load < $mn)); then
-        ./rungarnet 128 4 8 FlattenedButterfly 0.09 uniform_random 20000
+        ./batchfb2
         break
     fi
     sleep 10

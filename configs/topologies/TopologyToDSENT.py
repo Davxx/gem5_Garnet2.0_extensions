@@ -12,7 +12,11 @@ class TopologyToDSENT():
         # Use different base names for texname and pngname
         routercfg = "router.cfg"
         linkcfg = "electrical-link.cfg"
-        
+
+        # Limit ClockTree levels to 16
+        if maxdim > 16:
+            maxdim = 16
+
         try:
             with open(os.path.join(outdir, routercfg), "w") as routerfile:
                 routerfile.write("""
