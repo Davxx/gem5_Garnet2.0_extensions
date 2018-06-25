@@ -54,25 +54,37 @@ with open("resultspower2", "rt") as f:
                     idx.append(line.strip())
 power = dynamic+leakage
 mi = mindex(power)
+leakage_frac = leakage / (dynamic + leakage)
 dynamic = dynamic / power[mi]
 leakage = leakage / power[mi]
 throughput_per_watt = throughput / power
+throughput_per_core = np.array([])
 watt_per_area = power / area
 
 print "throughput:"
 for (i, e) in enumerate(throughput):
     print idx[i]
+
+    cores = idx[i].split("_")[0]
+    throughput_per_core = np.append(throughput_per_core, [e / float(cores)])
+
     print round(e,2)
 print
 
-print "power:"
-for (i, e) in enumerate(power):
+print "normalized throughput per core:"
+for (i, e) in enumerate(norm(throughput_per_core)):
     print idx[i]
     print round(e,2)
 print
 
-print "area:"
-for (i, e) in enumerate(area):
+print "normalized power:"
+for (i, e) in enumerate(norm(power)):
+    print idx[i]
+    print round(e,2)
+print
+
+print "normalized area:"
+for (i, e) in enumerate(norm(area)):
     print idx[i]
     print round(e,2)
 print
@@ -101,30 +113,9 @@ for (i, e) in enumerate(norm(watt_per_area)):
     print round(e,2)
 print
 
-sys.exit(0)
-
-print "dynamic:"
-for (i, e) in enumerate(dynamic):
+print "leakage power frac:"
+for (i, e) in enumerate(leakage_frac):
     print idx[i]
     print round(e,2)
 print
-
-print "leakage:"
-for (i, e) in enumerate(leakage):
-    print idx[i]
-    print round(e,2)
-print
-
-print "noc:"
-for (i, e) in enumerate(norm(noc)):
-    print idx[i]
-    print round(e,2)
-print
-
-print "die:"
-for (i, e) in enumerate(norm(die)):
-    print idx[i]
-    print round(e,2)
-print
-
 
