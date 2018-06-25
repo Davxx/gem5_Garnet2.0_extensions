@@ -1,24 +1,25 @@
 **Author**: David Smelt
 **Date**: June 23, 2018
 
-# This is a fork of the gem5 simulator (c) (forked [April 27, 2018](https://github.com/gem5/gem5/commit/5187a24d496cd16bfe440f52ff0c45ab0e185306)) with Garnet2.0 extensions.
+# This is a fork of the gem5 simulator (c) (forked <a href="https://github.com/gem5/gem5/commit/5187a24d496cd16bfe440f52ff0c45ab0e185306" target="_blank">April 27, 2018</a>) with Garnet2.0 extensions.
 It provides an easy framework for running and evaluating Garnet2.0 simulations.
-The extensions were built to aid in my computer science bachelor's thesis.
+The extensions were built to aid in my computer science bachelor's <a href="https://github.com/Davxx/gem5_Garnet2.0_extensions/raw/master/doc/Thesis%20-%20David%20Smelt%20-%20Modeling%20many-core%20processor%20interconnect%20scalability%20for%20the%20evolving%20performance%2C%20power%20and%20area%20relation.pdf" target="_blank">thesis</a>.
 
-# Please refer to doc/thesis_excerpt_garnet2.0_extensions.pdf for documentation.
+**Please refer to <a href="https://github.com/Davxx/gem5_Garnet2.0_extensions/raw/master/doc/thesis_excerpt_garnet2.0_extensions.pdf" target="_blank">doc/thesis_excerpt_garnet2.0_extensions.pdf</a> for documentation.**
 
-Important notes:
-     - util/on-chip-network-power-area-2.0.py features an updated integration of DSENT with Garnet2.0.
-       - It relies heavily on other extensions, e.g.:
-       - Edit configs/topologies/TopologyToDSENT.py to modify the generated DSENT router.cfg and electrical-link.cfg files.
-     - FlattenedButterfly lacks the canonically proposed repeaters and pipeline registers for links connecting non-neighboring routers.
-       - However, DSENT can insert repeaters on-the-fly.
-     - Ring and HierarchicalRing lack a deadlock escape algorithm.
-     - HierarchicalRing lacks microarchitectural differentiation between the central ring and any of the sub-rings.
-     - sniper_splash2/splash2/codes/kernels/fft/FFT is still deficient: more cores effectuate higher execution times. One is best served selecting a more approriate benchmark for comparing gem5 SE/FS-mode interconnect performance.
-     - No updates are planned as of June 24, 2018.
-     - Use the extensions as you please; no warranty is provided.
+**Important notes**:
+   - util/on-chip-network-power-area-2.0.py features an updated integration of DSENT with Garnet2.0.
+     - It relies heavily on other extensions, e.g.:
+     - Edit configs/topologies/TopologyToDSENT.py to modify the generated DSENT router.cfg and electrical-link.cfg files.
+   - FlattenedButterfly lacks the canonically proposed repeaters and pipeline registers for links connecting non-neighboring routers.
+     - However, DSENT can insert repeaters on-the-fly.
+   - Ring and HierarchicalRing lack a deadlock escape algorithm.
+   - HierarchicalRing lacks microarchitectural differentiation between the central ring and any of the sub-rings.
+   - sniper_splash2/splash2/codes/kernels/fft/FFT is still deficient: more cores effectuate higher execution times. One is best served selecting a more approriate benchmark for comparing gem5 SE/FS-mode interconnect performance.
+   - No updates are planned as of June 24, 2018.
+   - Use the extensions as you please; no warranty is provided.
 
+<hr>
 
 # gem5 is copyrighted software
 > Please see individual files for details of the license on each file.
