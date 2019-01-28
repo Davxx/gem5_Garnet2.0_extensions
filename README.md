@@ -3,7 +3,7 @@
 
 # This is a fork of the gem5 simulator (c) (forked <a href="https://github.com/gem5/gem5/commit/5187a24d496cd16bfe440f52ff0c45ab0e185306" target="_blank">April 27, 2018</a>) with Garnet2.0 extensions.
 It provides an easy framework for running and evaluating Garnet2.0 simulations.
-The extensions were built to aid in my computer science bachelor's <a href="https://github.com/Davxx/gem5_Garnet2.0_extensions/raw/master/doc/Thesis%20-%20David%20Smelt%20-%20Modeling%20many-core%20processor%20interconnect%20scalability%20for%20the%20evolving%20performance%2C%20power%20and%20area%20relation.pdf" target="_blank">thesis</a>.
+The extensions were built to aid in my computer science bachelor's thesis: <a href="https://github.com/Davxx/gem5_Garnet2.0_extensions/raw/master/doc/Thesis%20-%20David%20Smelt%20-%20Modeling%20many-core%20processor%20interconnect%20scalability%20for%20the%20evolving%20performance%2C%20power%20and%20area%20relation.pdf" target="_blank">Modeling many-core processor interconnect scalability for the evolving performance, power and area relation</a>.
 
 **Please refer to <a href="https://github.com/Davxx/gem5_Garnet2.0_extensions/raw/master/doc/thesis_excerpt_garnet2.0_extensions.pdf" target="_blank">doc/thesis_excerpt_garnet2.0_extensions.pdf</a> for documentation.**
 
